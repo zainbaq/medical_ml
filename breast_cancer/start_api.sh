@@ -2,11 +2,11 @@
 # Script to start the FastAPI server
 
 echo "=========================================="
-echo "Starting Cardiovascular Disease API"
+echo "Starting Breast Cancer Prediction API"
 echo "=========================================="
 echo ""
 
-# Navigate to cardiovascular_disease directory
+# Navigate to breast_cancer directory
 cd "$(dirname "$0")"
 
 # Check if virtual environment exists in backend
@@ -25,7 +25,7 @@ source backend/venv/bin/activate
 echo "Installing dependencies..."
 pip install -q -r backend/requirements.txt
 
-# Start server from cardiovascular_disease directory
+# Start server from breast_cancer directory
 echo ""
 echo "Starting FastAPI server..."
 echo "API will be available at: http://localhost:8000"

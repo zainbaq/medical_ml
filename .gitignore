@@ -128,5 +128,66 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# data
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Data folders
 /datasets
+data/
+raw_data/
+processed_data/
+raw/
+processed/
+*.csv
+*.tsv
+*.parquet
+*.feather
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# Model files and checkpoints
+models/
+saved_models/
+checkpoints/
+*.h5
+*.hdf5
+*.pkl
+*.pickle
+*.joblib
+*.pth
+*.pt
+*.ckpt
+*.pb
+*.onnx
+*.tflite
+*.keras
+
+# Training artifacts
+logs/
+runs/
+tensorboard/
+mlruns/
+wandb/
+lightning_logs/
+outputs/
+experiments/
+
+# Large media files
+*.npy
+*.npz
+*.tfrecord
+*.tfrecords
+
+# Weights and biases
+wandb/

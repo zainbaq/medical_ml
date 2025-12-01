@@ -1,0 +1,846 @@
+{
+	"info": {
+		"_postman_id": "medical-ml-registry-2025",
+		"name": "Medical ML Service Registry",
+		"description": "Complete test suite for the Medical ML Service Registry and unified interface.\n\nThis collection tests:\n- Service Registry health and endpoints\n- Service discovery and registration\n- CVD service health and predictions\n- Tag-based search\n- Aggregate health monitoring\n\nPrerequisites:\n1. Registry service running on port 9000\n2. CVD service running on port 8000\n\nStart services with:\n```\ncd registry/backend && uvicorn main:app --port 9000 --reload\ncd cardiovascular_disease && uvicorn backend.main:app --port 8000 --reload\n```",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. Registry Service Tests",
+			"item": [
+				{
+					"name": "1.1 Check Registry Health",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Registry is healthy\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.status).to.eql(\"healthy\");",
+									"});",
+									"",
+									"pm.test(\"Response has service name\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.service).to.exist;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:9000/health",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "9000",
+							"path": [
+								"health"
+							]
+						},
+						"description": "Checks if the registry service is running and healthy"
+					},
+					"response": []
+				},
+				{
+					"name": "1.2 List All Registered Services",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response is an array\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.be.an('array');",
+									"});",
+									"",
+									"pm.test(\"At least one service registered\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.length).to.be.at.least(1);",
+									"});",
+									"",
+									"pm.test(\"Service has required fields\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    if (jsonData.length > 0) {",
+									"        pm.expect(jsonData[0]).to.have.property('service_id');",
+									"        pm.expect(jsonData[0]).to.have.property('service_name');",
+									"        pm.expect(jsonData[0]).to.have.property('base_url');",
+									"        pm.expect(jsonData[0]).to.have.property('endpoints');",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:9000/api/v1/services",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "9000",
+							"path": [
+								"api",
+								"v1",
+								"services"
+							]
+						},
+						"description": "Retrieves all registered services from the registry"
+					},
+					"response": []
+				},
+				{
+					"name": "1.3 Get CVD Service Details",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Service ID is correct\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.service_id).to.eql('cardiovascular_disease');",
+									"});",
+									"",
+									"pm.test(\"Has input schema\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.input_schema).to.exist;",
+									"    pm.expect(jsonData.input_schema.properties).to.exist;",
+									"});",
+									"",
+									"pm.test(\"Has output schema\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.output_schema).to.exist;",
+									"});",
+									"",
+									"pm.test(\"Has endpoints defined\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.endpoints).to.have.property('predict');",
+									"    pm.expect(jsonData.endpoints).to.have.property('health');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:9000/api/v1/services/cardiovascular_disease",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "9000",
+							"path": [
+								"api",
+								"v1",
+								"services",
+								"cardiovascular_disease"
+							]
+						},
+						"description": "Retrieves detailed information about the CVD service including schemas"
+					},
+					"response": []
+				},
+				{
+					"name": "1.4 Search Services by Tag (cardiovascular)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Found at least one service\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.length).to.be.at.least(1);",
+									"});",
+									"",
+									"pm.test(\"Services have cardiovascular tag\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    jsonData.forEach(function(service) {",
+									"        pm.expect(service.tags).to.include('cardiovascular');",
+									"    });",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:9000/api/v1/services/search/by-tags?tags=cardiovascular",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "9000",
+							"path": [
+								"api",
+								"v1",
+								"services",
+								"search",
+								"by-tags"
+							],
+							"query": [
+								{
+									"key": "tags",
+									"value": "cardiovascular"
+								}
+							]
+						},
+						"description": "Searches for services by tag (cardiovascular)"
+					},
+					"response": []
+				},
+				{
+					"name": "1.5 Search Services by Tag (classification)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Found at least one service\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.length).to.be.at.least(1);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:9000/api/v1/services/search/by-tags?tags=classification",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "9000",
+							"path": [
+								"api",
+								"v1",
+								"services",
+								"search",
+								"by-tags"
+							],
+							"query": [
+								{
+									"key": "tags",
+									"value": "classification"
+								}
+							]
+						},
+						"description": "Searches for services by tag (classification)"
+					},
+					"response": []
+				},
+				{
+					"name": "1.6 Aggregate Health Check",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Has registry status\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.registry).to.exist;",
+									"    pm.expect(jsonData.registry.status).to.eql('healthy');",
+									"});",
+									"",
+									"pm.test(\"Has services health data\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.services).to.exist;",
+									"    pm.expect(jsonData.services).to.be.an('array');",
+									"});",
+									"",
+									"pm.test(\"All services are healthy\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    jsonData.services.forEach(function(service) {",
+									"        pm.expect(service.status).to.eql('healthy');",
+									"    });",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:9000/api/v1/health/all",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "9000",
+							"path": [
+								"api",
+								"v1",
+								"health",
+								"all"
+							]
+						},
+						"description": "Checks health of registry and all registered services"
+					},
+					"response": []
+				}
+			],
+			"description": "Tests all registry service endpoints including health checks, service discovery, and tag search"
+		},
+		{
+			"name": "2. CVD Service Tests",
+			"item": [
+				{
+					"name": "2.1 Check CVD Service Health",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Service is healthy\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.status).to.eql('healthy');",
+									"});",
+									"",
+									"pm.test(\"Has service name\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.service).to.exist;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8000/health",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"health"
+							]
+						},
+						"description": "Checks if the CVD service is running and healthy"
+					},
+					"response": []
+				},
+				{
+					"name": "2.2 Make CVD Prediction (Low Risk)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has prediction\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('prediction');",
+									"});",
+									"",
+									"pm.test(\"Prediction is valid (0 or 1)\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.prediction).to.be.oneOf([0, 1]);",
+									"});",
+									"",
+									"pm.test(\"Response has probability\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('probability');",
+									"    pm.expect(jsonData.probability).to.be.within(0, 1);",
+									"});",
+									"",
+									"pm.test(\"Response has risk level\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('risk_level');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"age_years\": 45.0,\n  \"gender\": 2,\n  \"height\": 170.0,\n  \"weight\": 70.0,\n  \"ap_hi\": 120,\n  \"ap_lo\": 80,\n  \"cholesterol\": 1,\n  \"gluc\": 1,\n  \"smoke\": 0,\n  \"alco\": 0,\n  \"active\": 1\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8000/api/v1/predict",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"v1",
+								"predict"
+							]
+						},
+						"description": "Makes a prediction for a patient with low risk factors:\n- Age: 45\n- Normal blood pressure (120/80)\n- Normal cholesterol and glucose\n- Non-smoker, no alcohol, active"
+					},
+					"response": []
+				},
+				{
+					"name": "2.3 Make CVD Prediction (Medium Risk)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has prediction\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('prediction');",
+									"});",
+									"",
+									"pm.test(\"Response has probability\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.probability).to.be.within(0, 1);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"age_years\": 55.0,\n  \"gender\": 2,\n  \"height\": 170.0,\n  \"weight\": 80.0,\n  \"ap_hi\": 130,\n  \"ap_lo\": 85,\n  \"cholesterol\": 2,\n  \"gluc\": 1,\n  \"smoke\": 0,\n  \"alco\": 0,\n  \"active\": 1\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8000/api/v1/predict",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"v1",
+								"predict"
+							]
+						},
+						"description": "Makes a prediction for a patient with medium risk factors:\n- Age: 55\n- Slightly elevated blood pressure (130/85)\n- Above normal cholesterol\n- Overweight"
+					},
+					"response": []
+				},
+				{
+					"name": "2.4 Make CVD Prediction (High Risk)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has prediction\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('prediction');",
+									"});",
+									"",
+									"pm.test(\"Response has probability\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.probability).to.be.within(0, 1);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"age_years\": 65.0,\n  \"gender\": 1,\n  \"height\": 165.0,\n  \"weight\": 95.0,\n  \"ap_hi\": 160,\n  \"ap_lo\": 100,\n  \"cholesterol\": 3,\n  \"gluc\": 3,\n  \"smoke\": 1,\n  \"alco\": 1,\n  \"active\": 0\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8000/api/v1/predict",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"v1",
+								"predict"
+							]
+						},
+						"description": "Makes a prediction for a patient with high risk factors:\n- Age: 65\n- High blood pressure (160/100)\n- High cholesterol and glucose\n- Smoker, alcohol, inactive\n- Obese"
+					},
+					"response": []
+				},
+				{
+					"name": "2.5 Test Invalid Input (Missing Fields)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 422 (Validation Error)\", function () {",
+									"    pm.response.to.have.status(422);",
+									"});",
+									"",
+									"pm.test(\"Error indicates missing fields\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('detail');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"age_years\": 55.0,\n  \"gender\": 2\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8000/api/v1/predict",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"v1",
+								"predict"
+							]
+						},
+						"description": "Tests validation by sending incomplete data (missing required fields)"
+					},
+					"response": []
+				},
+				{
+					"name": "2.6 Test Invalid Input (Out of Range)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 422 (Validation Error)\", function () {",
+									"    pm.response.to.have.status(422);",
+									"});",
+									"",
+									"pm.test(\"Error indicates validation failure\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('detail');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"age_years\": -5.0,\n  \"gender\": 2,\n  \"height\": 170.0,\n  \"weight\": 80.0,\n  \"ap_hi\": 130,\n  \"ap_lo\": 85,\n  \"cholesterol\": 2,\n  \"gluc\": 1,\n  \"smoke\": 0,\n  \"alco\": 0,\n  \"active\": 1\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8000/api/v1/predict",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"v1",
+								"predict"
+							]
+						},
+						"description": "Tests validation by sending invalid data (negative age)"
+					},
+					"response": []
+				}
+			],
+			"description": "Tests the CVD service endpoints including health checks and predictions with various risk levels"
+		},
+		{
+			"name": "3. End-to-End Workflow",
+			"item": [
+				{
+					"name": "3.1 Discover Services",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Store service data for next requests",
+									"var services = pm.response.json();",
+									"if (services.length > 0) {",
+									"    var cvdService = services.find(s => s.service_id === 'cardiovascular_disease');",
+									"    if (cvdService) {",
+									"        pm.environment.set('cvd_base_url', cvdService.base_url);",
+									"        pm.environment.set('cvd_predict_endpoint', cvdService.endpoints.predict);",
+									"    }",
+									"}",
+									"",
+									"pm.test(\"Services discovered successfully\", function () {",
+									"    pm.expect(services.length).to.be.at.least(1);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:9000/api/v1/services",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "9000",
+							"path": [
+								"api",
+								"v1",
+								"services"
+							]
+						},
+						"description": "Step 1: Frontend discovers available services"
+					},
+					"response": []
+				},
+				{
+					"name": "3.2 Get Service Schema",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Schema retrieved successfully\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.input_schema).to.exist;",
+									"    pm.expect(jsonData.output_schema).to.exist;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:9000/api/v1/services/cardiovascular_disease",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "9000",
+							"path": [
+								"api",
+								"v1",
+								"services",
+								"cardiovascular_disease"
+							]
+						},
+						"description": "Step 2: Frontend gets service schema to build form"
+					},
+					"response": []
+				},
+				{
+					"name": "3.3 Make Prediction",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Prediction made successfully\", function () {",
+									"    pm.response.to.have.status(200);",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('prediction');",
+									"    pm.expect(jsonData).to.have.property('probability');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"age_years\": 55.0,\n  \"gender\": 2,\n  \"height\": 170.0,\n  \"weight\": 80.0,\n  \"ap_hi\": 130,\n  \"ap_lo\": 85,\n  \"cholesterol\": 2,\n  \"gluc\": 1,\n  \"smoke\": 0,\n  \"alco\": 0,\n  \"active\": 1\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8000/api/v1/predict",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8000",
+							"path": [
+								"api",
+								"v1",
+								"predict"
+							]
+						},
+						"description": "Step 3: Frontend makes prediction using discovered service"
+					},
+					"response": []
+				},
+				{
+					"name": "3.4 Check All Health",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"All services healthy\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.registry.status).to.eql('healthy');",
+									"    jsonData.services.forEach(function(service) {",
+									"        pm.expect(service.status).to.eql('healthy');",
+									"    });",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:9000/api/v1/health/all",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "9000",
+							"path": [
+								"api",
+								"v1",
+								"health",
+								"all"
+							]
+						},
+						"description": "Step 4: Frontend monitors system health"
+					},
+					"response": []
+				}
+			],
+			"description": "Complete end-to-end workflow simulating how a frontend would use the unified interface"
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	]
+}

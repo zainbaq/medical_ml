@@ -1,0 +1,680 @@
+{
+	"id": "c0633f9e-d71d-427a-8383-e903ee3fab9a",
+	"name": "Medical ML Service Registry",
+	"timestamp": "2025-12-01T04:34:51.828Z",
+	"collection_id": "42947412-180a5bf2-087e-46ee-88b7-38d197d0ca34",
+	"folder_id": 0,
+	"environment_id": "0",
+	"totalPass": 24,
+	"delay": 0,
+	"persist": true,
+	"status": "finished",
+	"startedAt": "2025-12-01T04:34:51.418Z",
+	"totalFail": 19,
+	"results": [
+		{
+			"id": "eed5c48b-2179-4000-8440-10bb7909d71c",
+			"name": "1.1 Check Registry Health",
+			"url": "http://localhost:9000/health",
+			"time": 7,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Status code is 200": true,
+				"Registry is healthy": true,
+				"Response has service name": false
+			},
+			"testPassFailCounts": {
+				"Status code is 200": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Registry is healthy": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Response has service name": {
+					"pass": 0,
+					"fail": 1
+				}
+			},
+			"times": [
+				7
+			],
+			"allTests": [
+				{
+					"Status code is 200": true,
+					"Registry is healthy": true,
+					"Response has service name": false
+				}
+			]
+		},
+		{
+			"id": "58bf7e90-6174-4173-82d7-fa116f64f9d8",
+			"name": "1.2 List All Registered Services",
+			"url": "http://localhost:9000/api/v1/services",
+			"time": 5,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Status code is 200": true,
+				"Response is an array": true,
+				"At least one service registered": true,
+				"Service has required fields": true
+			},
+			"testPassFailCounts": {
+				"Status code is 200": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Response is an array": {
+					"pass": 1,
+					"fail": 0
+				},
+				"At least one service registered": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Service has required fields": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				5
+			],
+			"allTests": [
+				{
+					"Status code is 200": true,
+					"Response is an array": true,
+					"At least one service registered": true,
+					"Service has required fields": true
+				}
+			]
+		},
+		{
+			"id": "a7b52c53-6a56-4db8-bedf-172e57110eb0",
+			"name": "1.3 Get CVD Service Details",
+			"url": "http://localhost:9000/api/v1/services/cardiovascular_disease",
+			"time": 3,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Status code is 200": true,
+				"Service ID is correct": true,
+				"Has input schema": true,
+				"Has output schema": true,
+				"Has endpoints defined": true
+			},
+			"testPassFailCounts": {
+				"Status code is 200": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Service ID is correct": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Has input schema": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Has output schema": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Has endpoints defined": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				3
+			],
+			"allTests": [
+				{
+					"Status code is 200": true,
+					"Service ID is correct": true,
+					"Has input schema": true,
+					"Has output schema": true,
+					"Has endpoints defined": true
+				}
+			]
+		},
+		{
+			"id": "281418c4-0896-45b8-94b0-589ec48a2022",
+			"name": "1.4 Search Services by Tag (cardiovascular)",
+			"url": "http://localhost:9000/api/v1/services/search/by-tags?tags=cardiovascular",
+			"time": 3,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Status code is 200": true,
+				"Found at least one service": true,
+				"Services have cardiovascular tag": true
+			},
+			"testPassFailCounts": {
+				"Status code is 200": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Found at least one service": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Services have cardiovascular tag": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				3
+			],
+			"allTests": [
+				{
+					"Status code is 200": true,
+					"Found at least one service": true,
+					"Services have cardiovascular tag": true
+				}
+			]
+		},
+		{
+			"id": "ed373201-d318-4c87-ae71-a519508dbf0f",
+			"name": "1.5 Search Services by Tag (classification)",
+			"url": "http://localhost:9000/api/v1/services/search/by-tags?tags=classification",
+			"time": 2,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Status code is 200": true,
+				"Found at least one service": true
+			},
+			"testPassFailCounts": {
+				"Status code is 200": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Found at least one service": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				2
+			],
+			"allTests": [
+				{
+					"Status code is 200": true,
+					"Found at least one service": true
+				}
+			]
+		},
+		{
+			"id": "a3dfa982-4a47-4d20-929d-ba6f50c18e97",
+			"name": "1.6 Aggregate Health Check",
+			"url": "http://localhost:9000/api/v1/health/all",
+			"time": 3,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Status code is 200": true,
+				"Has registry status": false,
+				"Has services health data": false,
+				"All services are healthy": false
+			},
+			"testPassFailCounts": {
+				"Status code is 200": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Has registry status": {
+					"pass": 0,
+					"fail": 1
+				},
+				"Has services health data": {
+					"pass": 0,
+					"fail": 1
+				},
+				"All services are healthy": {
+					"pass": 0,
+					"fail": 1
+				}
+			},
+			"times": [
+				3
+			],
+			"allTests": [
+				{
+					"Status code is 200": true,
+					"Has registry status": false,
+					"Has services health data": false,
+					"All services are healthy": false
+				}
+			]
+		},
+		{
+			"id": "9308a924-ebe9-4d40-af71-875cf8b6b546",
+			"name": "2.1 Check CVD Service Health",
+			"url": "http://localhost:8000/health",
+			"time": 7,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Status code is 200": true,
+				"Service is healthy": false,
+				"Has service name": false
+			},
+			"testPassFailCounts": {
+				"Status code is 200": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Service is healthy": {
+					"pass": 0,
+					"fail": 1
+				},
+				"Has service name": {
+					"pass": 0,
+					"fail": 1
+				}
+			},
+			"times": [
+				7
+			],
+			"allTests": [
+				{
+					"Status code is 200": true,
+					"Service is healthy": false,
+					"Has service name": false
+				}
+			]
+		},
+		{
+			"id": "e06debee-4ae5-43ae-a449-1ebe3ee50743",
+			"name": "2.2 Make CVD Prediction (Low Risk)",
+			"url": "http://localhost:8000/api/v1/predict",
+			"time": 3,
+			"responseCode": {
+				"code": 503,
+				"name": "Service Unavailable"
+			},
+			"tests": {
+				"Status code is 200": false,
+				"Response has prediction": false,
+				"Prediction is valid (0 or 1)": false,
+				"Response has probability": false,
+				"Response has risk level": false
+			},
+			"testPassFailCounts": {
+				"Status code is 200": {
+					"pass": 0,
+					"fail": 1
+				},
+				"Response has prediction": {
+					"pass": 0,
+					"fail": 1
+				},
+				"Prediction is valid (0 or 1)": {
+					"pass": 0,
+					"fail": 1
+				},
+				"Response has probability": {
+					"pass": 0,
+					"fail": 1
+				},
+				"Response has risk level": {
+					"pass": 0,
+					"fail": 1
+				}
+			},
+			"times": [
+				3
+			],
+			"allTests": [
+				{
+					"Status code is 200": false,
+					"Response has prediction": false,
+					"Prediction is valid (0 or 1)": false,
+					"Response has probability": false,
+					"Response has risk level": false
+				}
+			]
+		},
+		{
+			"id": "83aaad16-cefb-4238-ae02-259d19c1dcbb",
+			"name": "2.3 Make CVD Prediction (Medium Risk)",
+			"url": "http://localhost:8000/api/v1/predict",
+			"time": 2,
+			"responseCode": {
+				"code": 503,
+				"name": "Service Unavailable"
+			},
+			"tests": {
+				"Status code is 200": false,
+				"Response has prediction": false,
+				"Response has probability": false
+			},
+			"testPassFailCounts": {
+				"Status code is 200": {
+					"pass": 0,
+					"fail": 1
+				},
+				"Response has prediction": {
+					"pass": 0,
+					"fail": 1
+				},
+				"Response has probability": {
+					"pass": 0,
+					"fail": 1
+				}
+			},
+			"times": [
+				2
+			],
+			"allTests": [
+				{
+					"Status code is 200": false,
+					"Response has prediction": false,
+					"Response has probability": false
+				}
+			]
+		},
+		{
+			"id": "7e2a7137-cc8f-438d-9816-3b53577f861b",
+			"name": "2.4 Make CVD Prediction (High Risk)",
+			"url": "http://localhost:8000/api/v1/predict",
+			"time": 3,
+			"responseCode": {
+				"code": 503,
+				"name": "Service Unavailable"
+			},
+			"tests": {
+				"Status code is 200": false,
+				"Response has prediction": false,
+				"Response has probability": false
+			},
+			"testPassFailCounts": {
+				"Status code is 200": {
+					"pass": 0,
+					"fail": 1
+				},
+				"Response has prediction": {
+					"pass": 0,
+					"fail": 1
+				},
+				"Response has probability": {
+					"pass": 0,
+					"fail": 1
+				}
+			},
+			"times": [
+				3
+			],
+			"allTests": [
+				{
+					"Status code is 200": false,
+					"Response has prediction": false,
+					"Response has probability": false
+				}
+			]
+		},
+		{
+			"id": "aa14786d-3285-4a69-836e-e6ad5fdddfc0",
+			"name": "2.5 Test Invalid Input (Missing Fields)",
+			"url": "http://localhost:8000/api/v1/predict",
+			"time": 3,
+			"responseCode": {
+				"code": 422,
+				"name": "Unprocessable Entity"
+			},
+			"tests": {
+				"Status code is 422 (Validation Error)": true,
+				"Error indicates missing fields": true
+			},
+			"testPassFailCounts": {
+				"Status code is 422 (Validation Error)": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Error indicates missing fields": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				3
+			],
+			"allTests": [
+				{
+					"Status code is 422 (Validation Error)": true,
+					"Error indicates missing fields": true
+				}
+			]
+		},
+		{
+			"id": "679a6aad-bc65-4360-af94-cff96c37ded5",
+			"name": "2.6 Test Invalid Input (Out of Range)",
+			"url": "http://localhost:8000/api/v1/predict",
+			"time": 3,
+			"responseCode": {
+				"code": 422,
+				"name": "Unprocessable Entity"
+			},
+			"tests": {
+				"Status code is 422 (Validation Error)": true,
+				"Error indicates validation failure": true
+			},
+			"testPassFailCounts": {
+				"Status code is 422 (Validation Error)": {
+					"pass": 1,
+					"fail": 0
+				},
+				"Error indicates validation failure": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				3
+			],
+			"allTests": [
+				{
+					"Status code is 422 (Validation Error)": true,
+					"Error indicates validation failure": true
+				}
+			]
+		},
+		{
+			"id": "80a494e2-4435-405c-a027-087407ee7f56",
+			"name": "3.1 Discover Services",
+			"url": "http://localhost:9000/api/v1/services",
+			"time": 2,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Services discovered successfully": true
+			},
+			"testPassFailCounts": {
+				"Services discovered successfully": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				2
+			],
+			"allTests": [
+				{
+					"Services discovered successfully": true
+				}
+			]
+		},
+		{
+			"id": "f9fb80eb-1912-414d-a909-0da55cbc5ec9",
+			"name": "3.2 Get Service Schema",
+			"url": "http://localhost:9000/api/v1/services/cardiovascular_disease",
+			"time": 2,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"Schema retrieved successfully": true
+			},
+			"testPassFailCounts": {
+				"Schema retrieved successfully": {
+					"pass": 1,
+					"fail": 0
+				}
+			},
+			"times": [
+				2
+			],
+			"allTests": [
+				{
+					"Schema retrieved successfully": true
+				}
+			]
+		},
+		{
+			"id": "3704fcb8-e4e6-4deb-8bde-ebbd546589df",
+			"name": "3.3 Make Prediction",
+			"url": "http://localhost:8000/api/v1/predict",
+			"time": 3,
+			"responseCode": {
+				"code": 503,
+				"name": "Service Unavailable"
+			},
+			"tests": {
+				"Prediction made successfully": false
+			},
+			"testPassFailCounts": {
+				"Prediction made successfully": {
+					"pass": 0,
+					"fail": 1
+				}
+			},
+			"times": [
+				3
+			],
+			"allTests": [
+				{
+					"Prediction made successfully": false
+				}
+			]
+		},
+		{
+			"id": "7a0faa29-ac52-4da9-9de0-f1bc7ae3b216",
+			"name": "3.4 Check All Health",
+			"url": "http://localhost:9000/api/v1/health/all",
+			"time": 2,
+			"responseCode": {
+				"code": 200,
+				"name": "OK"
+			},
+			"tests": {
+				"All services healthy": false
+			},
+			"testPassFailCounts": {
+				"All services healthy": {
+					"pass": 0,
+					"fail": 1
+				}
+			},
+			"times": [
+				2
+			],
+			"allTests": [
+				{
+					"All services healthy": false
+				}
+			]
+		}
+	],
+	"count": 1,
+	"totalTime": 53,
+	"collection": {
+		"requests": [
+			{
+				"id": "eed5c48b-2179-4000-8440-10bb7909d71c",
+				"method": "GET"
+			},
+			{
+				"id": "58bf7e90-6174-4173-82d7-fa116f64f9d8",
+				"method": "GET"
+			},
+			{
+				"id": "a7b52c53-6a56-4db8-bedf-172e57110eb0",
+				"method": "GET"
+			},
+			{
+				"id": "281418c4-0896-45b8-94b0-589ec48a2022",
+				"method": "GET"
+			},
+			{
+				"id": "ed373201-d318-4c87-ae71-a519508dbf0f",
+				"method": "GET"
+			},
+			{
+				"id": "a3dfa982-4a47-4d20-929d-ba6f50c18e97",
+				"method": "GET"
+			},
+			{
+				"id": "9308a924-ebe9-4d40-af71-875cf8b6b546",
+				"method": "GET"
+			},
+			{
+				"id": "e06debee-4ae5-43ae-a449-1ebe3ee50743",
+				"method": "POST"
+			},
+			{
+				"id": "83aaad16-cefb-4238-ae02-259d19c1dcbb",
+				"method": "POST"
+			},
+			{
+				"id": "7e2a7137-cc8f-438d-9816-3b53577f861b",
+				"method": "POST"
+			},
+			{
+				"id": "aa14786d-3285-4a69-836e-e6ad5fdddfc0",
+				"method": "POST"
+			},
+			{
+				"id": "679a6aad-bc65-4360-af94-cff96c37ded5",
+				"method": "POST"
+			},
+			{
+				"id": "80a494e2-4435-405c-a027-087407ee7f56",
+				"method": "GET"
+			},
+			{
+				"id": "f9fb80eb-1912-414d-a909-0da55cbc5ec9",
+				"method": "GET"
+			},
+			{
+				"id": "3704fcb8-e4e6-4deb-8bde-ebbd546589df",
+				"method": "POST"
+			},
+			{
+				"id": "7a0faa29-ac52-4da9-9de0-f1bc7ae3b216",
+				"method": "GET"
+			}
+		]
+	}
+}

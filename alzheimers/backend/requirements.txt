@@ -7,3 +7,5 @@ pandas>=2.0.0
 joblib>=1.3.0
 uvicorn>=0.24.0
 requests>=2.31.0
+httpx>=0.24.0
+medical-ml-sdk>=1.0.0

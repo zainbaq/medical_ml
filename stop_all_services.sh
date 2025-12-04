@@ -13,11 +13,21 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
+CYAN='\033[0;36m'
 NC='\033[0m'
 
 # Project root
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LOG_DIR="$PROJECT_ROOT/logs"
+
+# Service configuration (must match start_all_services.sh)
+# Format: "service_name:directory:port:required"
+declare -a SERVICES=(
+    "Registry:registry/backend:9000:true"
+    "Cardiovascular Disease:cardiovascular_disease:8000:true"
+    "Breast Cancer:breast_cancer:8001:false"
+    "Alzheimers:alzheimers:8002:false"
+)
 
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo -e "${BLUE}     Stopping Medical ML Service Registry System            ${NC}"
@@ -46,29 +56,39 @@ stop_service() {
             echo -e "${YELLOW}   • $name was not running (PID $pid)${NC}"
         fi
         rm -f "$pid_file"
-    else
-        echo -e "${YELLOW}   • No PID file found for $name${NC}"
     fi
 }
 
-# Stop services using PID files
+# Stop services using PID files (in reverse order)
 if [ -d "$LOG_DIR" ]; then
     echo -e "\n${YELLOW}Stopping services using PID files...${NC}\n"
 
-    stop_service "Alzheimers Service" "$LOG_DIR/alzheimers.pid"
-    stop_service "Breast Cancer Service" "$LOG_DIR/breast_cancer.pid"
-    stop_service "CVD Service" "$LOG_DIR/cvd.pid"
-    stop_service "Registry Service" "$LOG_DIR/registry.pid"
+    # Stop in reverse order (optional services first, then required, registry last)
+    for ((idx=${#SERVICES[@]}-1 ; idx>=0 ; idx--)); do
+        service="${SERVICES[idx]}"
+        IFS=':' read -r name dir port required <<< "$service"
+        log_name=$(echo "$name" | tr '[:upper:]' '[:lower:]' | tr ' ' '_')
+        pid_file="$LOG_DIR/${log_name}.pid"
+
+        stop_service "$name Service" "$pid_file"
+    done
 else
     echo -e "\n${YELLOW}No logs directory found${NC}"
 fi
 
-# Kill any remaining uvicorn processes on our ports
-echo -e "\n${YELLOW}Checking for remaining processes on ports 8000-8002, 9000...${NC}\n"
+# Kill any remaining processes on our ports
+echo -e "\n${YELLOW}Checking for remaining processes on ports...${NC}\n"
 
 KILLED_COUNT=0
 
-for port in 9000 8000 8001 8002; do
+# Extract ports from service configuration
+PORTS=()
+for service in "${SERVICES[@]}"; do
+    IFS=':' read -r name dir port required <<< "$service"
+    PORTS+=($port)
+done
+
+for port in "${PORTS[@]}"; do
     PIDS=$(lsof -ti:$port 2>/dev/null)
     if [ ! -z "$PIDS" ]; then
         echo -e "${YELLOW}Found process(es) on port $port: $PIDS${NC}"
@@ -94,12 +114,12 @@ else
     echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 fi
 
-# Clean up log directory if it exists and is empty
+# Clean up log directory
 if [ -d "$LOG_DIR" ]; then
     # Remove PID files
     rm -f "$LOG_DIR"/*.pid 2>/dev/null
 
-    # Check if we should clean up logs
+    # Check if we should preserve logs
     if [ -z "$(ls -A $LOG_DIR)" ]; then
         echo -e "\n${YELLOW}Log directory is empty. Removing...${NC}"
         rmdir "$LOG_DIR"

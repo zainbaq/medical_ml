@@ -11,6 +11,10 @@ from .models.schemas import HealthResponse
 from .models.ml_model import model_loader
 from .routes import predict
 
+# Import SDK components for service registration
+from medical_ml_sdk.plugin.registry_client import RegistryClient
+from medical_ml_sdk.core.schemas import ServiceMetadata
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -38,16 +42,57 @@ async def lifespan(app: FastAPI):
     else:
         logger.warning("Failed to load model. API will be limited.")
 
+    # Auto-register with service registry
+    registry_client = None
+    if settings.AUTO_REGISTER:
+        try:
+            logger.info(f"Registering with service registry at {settings.REGISTRY_URL}...")
+            registry_client = RegistryClient(settings.REGISTRY_URL)
+
+            from .models.schemas import TumorFeatures, PredictionResponse
+
+            metadata = ServiceMetadata(
+                service_id=settings.SERVICE_ID,
+                service_name=settings.SERVICE_NAME,
+                version=settings.SERVICE_VERSION,
+                description=settings.SERVICE_DESCRIPTION,
+                base_url=f"http://localhost:{settings.PORT}",
+                port=settings.PORT,
+                endpoints={
+                    "predict": f"{settings.API_PREFIX}/predict",
+                    "health": "/health",
+                    "model_info": f"{settings.API_PREFIX}/model-info"
+                },
+                input_schema=TumorFeatures.model_json_schema(),
+                output_schema=PredictionResponse.model_json_schema(),
+                tags=["cancer", "breast", "classification"],
+                capabilities=model_loader.get_model_info()
+            )
+
+            registered = await registry_client.register_service(metadata)
+            if registered:
+                logger.info("Successfully registered with service registry!")
+            else:
+                logger.warning("Failed to register with service registry (service will still work)")
+        except Exception as e:
+            logger.warning(f"Could not register with service registry: {str(e)}")
+
     yield
 
-    # Shutdown
+    # Shutdown: Unregister from service registry
     logger.info("Shutting down application...")
+    if settings.AUTO_REGISTER and registry_client:
+        try:
+            await registry_client.unregister_service(settings.SERVICE_ID)
+            logger.info("Unregistered from service registry")
+        except Exception as e:
+            logger.warning(f"Could not unregister from service registry: {str(e)}")
 
 
 # Create FastAPI app
 app = FastAPI(
-    title=settings.APP_NAME,
-    version=settings.APP_VERSION,
+    title=settings.SERVICE_NAME,
+    version=settings.SERVICE_VERSION,
     description="""
     FastAPI backend for breast cancer prediction using machine learning.
 
@@ -96,8 +141,8 @@ async def root():
     Root endpoint with API information
     """
     return {
-        "name": settings.APP_NAME,
-        "version": settings.APP_VERSION,
+        "name": settings.SERVICE_NAME,
+        "version": settings.SERVICE_VERSION,
         "docs": "/docs",
         "health": "/health"
     }
@@ -118,9 +163,10 @@ async def health_check():
 
     return HealthResponse(
         status="healthy" if model_loader.is_loaded() else "degraded",
+        service=settings.SERVICE_NAME,
         model_loaded=model_loader.is_loaded(),
         model_name=model_info.get('model_name') if model_info else None,
-        version=settings.APP_VERSION
+        version=settings.SERVICE_VERSION
     )
 
 

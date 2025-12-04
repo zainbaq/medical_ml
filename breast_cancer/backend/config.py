@@ -2,30 +2,35 @@
 Configuration for FastAPI backend
 """
 from pathlib import Path
-from pydantic_settings import BaseSettings
+from medical_ml_sdk.core.config import BaseServiceConfig
 
 
-class Settings(BaseSettings):
-    """Application settings"""
+class Settings(BaseServiceConfig):
+    """Application settings - extends BaseServiceConfig from SDK"""
+
+    # Service Identity (required by BaseServiceConfig)
+    SERVICE_NAME: str = "Breast Cancer Prediction API"
+    SERVICE_ID: str = "breast_cancer"
+    SERVICE_VERSION: str = "1.0.0"
+    SERVICE_DESCRIPTION: str = "Predicts breast cancer from tumor features"
+
+    # Service Discovery
+    REGISTRY_URL: str = "http://localhost:9000"
+    AUTO_REGISTER: bool = True
 
     # Application
-    APP_NAME: str = "Breast Cancer Prediction API"
-    APP_VERSION: str = "1.0.0"
     DEBUG: bool = False
 
     # Paths
     BASE_DIR: Path = Path(__file__).parent.parent
     MODELS_DIR: Path = BASE_DIR / "models"
 
-    # Model
+    # Server
+    PORT: int = 8001
+
+    # Model (service-specific)
     MODEL_PATH: str = ""
     SCALER_PATH: str = ""
-
-    # API
-    API_PREFIX: str = "/api/v1"
-
-    # CORS
-    ALLOWED_ORIGINS: list = ["*"]
 
     class Config:
         case_sensitive = True

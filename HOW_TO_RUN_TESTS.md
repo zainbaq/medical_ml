@@ -152,31 +152,41 @@ curl -X POST http://localhost:8000/api/v1/predict \
   }'
 ```
 
-## Using Postman
+## Using Postman (Recommended)
 
-A Postman collection is provided: `Medical_ML_Registry.postman_collection.json`
+A comprehensive Postman collection with 53 tests is provided: `Medical_ML_Registry.postman_collection.json`
 
 ### Import the collection:
 1. Open Postman
-2. Click "Import" button
+2. Click "Import" button (top left)
 3. Select `Medical_ML_Registry.postman_collection.json`
 4. The collection will appear in your Collections sidebar
 
-### Run the collection:
-1. Ensure services are running (see Manual Testing section above)
-2. Click on "Medical ML Service Registry" collection
-3. Click "Run" button
-4. Select all requests
-5. Click "Run Medical ML Service Registry"
+### Start Services:
+```bash
+./start_all_services.sh
+```
 
-The collection tests:
-- Registry health
-- Service registration
-- Service discovery
-- Service health
-- Making predictions
-- Tag search
-- Aggregate health
+### Run the collection:
+1. Click on "Medical ML Service Registry" collection
+2. Click "Run" button (top right)
+3. Select all requests or specific test sections
+4. Click "Run Medical ML Service Registry"
+5. View detailed results with pass/fail for each assertion
+
+### What's tested (53 tests across 18 requests):
+- **Registry Service**: Health, service listing, discovery, tag search, aggregate health (8 tests)
+- **CVD Service**: Health checks, low/high risk predictions (8 tests)
+- **Breast Cancer Service**: Health checks, benign/malignant predictions (5 tests)
+- **Alzheimer's Service**: Health checks, dementia/no-dementia predictions (5 tests)
+- **End-to-End Workflows**: Service discovery, schema retrieval, health monitoring (3 tests)
+
+### Expected Results:
+- ✅ All 53 tests should pass
+- Status codes validated (200 OK for success)
+- Response schemas validated (required fields present)
+- Business logic validated (predictions in expected ranges)
+- Health monitoring validated (services report healthy)
 
 ## Troubleshooting
 

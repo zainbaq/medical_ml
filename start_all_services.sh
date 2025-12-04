@@ -2,13 +2,13 @@
 #
 # Start All Medical ML Services
 #
-# This script starts:
-#   1. Registry Service (port 9000)
+# This script starts all medical ML services that use the medical_ml_sdk framework:
+#   1. Registry Service (port 9000) - Central service registry
 #   2. Cardiovascular Disease Service (port 8000)
 #   3. Breast Cancer Service (port 8001)
 #   4. Alzheimers Service (port 8002)
 #
-# Services will auto-register with the registry on startup.
+# All services auto-register with the registry on startup using the SDK.
 #
 # Usage:
 #   ./start_all_services.sh
@@ -31,12 +31,34 @@ NC='\033[0m'
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$PROJECT_ROOT"
 
-# Log file
+# Check and activate virtual environment
+VENV_DIR="$PROJECT_ROOT/venv"
+if [ ! -d "$VENV_DIR" ]; then
+    echo -e "${RED}✗ Virtual environment not found at: $VENV_DIR${NC}"
+    echo -e "${YELLOW}Please run './setup_env.sh' first to create the environment${NC}"
+    exit 1
+fi
+
+echo -e "${CYAN}Activating virtual environment...${NC}"
+source "$VENV_DIR/bin/activate"
+echo -e "${GREEN}✓ Virtual environment activated${NC}"
+
+# Log directory
 LOG_DIR="$PROJECT_ROOT/logs"
 mkdir -p "$LOG_DIR"
 
+# Service configuration array
+# Format: "service_name:directory:port:required"
+declare -a SERVICES=(
+    "Registry:registry/backend:9000:true"
+    "Cardiovascular Disease:cardiovascular_disease:8000:true"
+    "Breast Cancer:breast_cancer:8001:false"
+    "Alzheimers:alzheimers:8002:false"
+)
+
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo -e "${BLUE}     Starting Medical ML Service Registry System            ${NC}"
+echo -e "${BLUE}     (Powered by medical_ml_sdk)                            ${NC}"
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 
 # Check if ports are already in use
@@ -71,86 +93,88 @@ wait_for_service() {
 }
 
 # Check for port conflicts
-echo -e "\n${YELLOW}[1/5] Checking for port conflicts...${NC}"
+echo -e "\n${YELLOW}[Step 1] Checking for port conflicts...${NC}"
 PORTS_IN_USE=()
 
-if check_port 9000; then PORTS_IN_USE+=(9000); fi
-if check_port 8000; then PORTS_IN_USE+=(8000); fi
-if check_port 8001; then PORTS_IN_USE+=(8001); fi
-if check_port 8002; then PORTS_IN_USE+=(8002); fi
+for service in "${SERVICES[@]}"; do
+    IFS=':' read -r name dir port required <<< "$service"
+    if check_port "$port"; then
+        PORTS_IN_USE+=($port)
+    fi
+done
 
 if [ ${#PORTS_IN_USE[@]} -gt 0 ]; then
     echo -e "${RED}   ✗ The following ports are already in use: ${PORTS_IN_USE[*]}${NC}"
     echo -e "${YELLOW}   Run './stop_all_services.sh' to stop existing services${NC}"
-    echo -e "${YELLOW}   Or manually kill processes: lsof -ti:${PORTS_IN_USE[*]} | xargs kill -9${NC}"
     exit 1
 fi
 
 echo -e "${GREEN}   ✓ All ports available${NC}"
 
-# Start Registry Service
-echo -e "\n${YELLOW}[2/5] Starting Registry Service (port 9000)...${NC}"
-cd "$PROJECT_ROOT/registry/backend"
-nohup uvicorn main:app --host 0.0.0.0 --port 9000 > "$LOG_DIR/registry.log" 2>&1 &
-REGISTRY_PID=$!
-echo $REGISTRY_PID > "$LOG_DIR/registry.pid"
-echo -e "${CYAN}   Registry PID: $REGISTRY_PID${NC}"
-cd "$PROJECT_ROOT"
+# Start services
+step=2
+for service in "${SERVICES[@]}"; do
+    IFS=':' read -r name dir port required <<< "$service"
 
-if ! wait_for_service "http://localhost:9000/health" "Registry" 30; then
-    echo -e "${RED}   Failed to start registry service${NC}"
-    exit 1
-fi
+    # Determine log and pid file names
+    log_name=$(echo "$name" | tr '[:upper:]' '[:lower:]' | tr ' ' '_')
+    pid_file="$LOG_DIR/${log_name}.pid"
+    log_file="$LOG_DIR/${log_name}.log"
 
-# Start Cardiovascular Disease Service
-echo -e "\n${YELLOW}[3/5] Starting Cardiovascular Disease Service (port 8000)...${NC}"
-cd "$PROJECT_ROOT/cardiovascular_disease"
-nohup uvicorn backend.main:app --host 0.0.0.0 --port 8000 > "$LOG_DIR/cvd.log" 2>&1 &
-CVD_PID=$!
-echo $CVD_PID > "$LOG_DIR/cvd.pid"
-echo -e "${CYAN}   CVD Service PID: $CVD_PID${NC}"
-cd "$PROJECT_ROOT"
+    # Check if service directory exists
+    if [ ! -d "$PROJECT_ROOT/$dir" ]; then
+        if [ "$required" = "true" ]; then
+            echo -e "\n${RED}[Step $step] Error: Required service '$name' not found at $dir${NC}"
+            exit 1
+        else
+            echo -e "\n${YELLOW}[Step $step] Skipping optional service '$name' (not found)${NC}"
+            step=$((step + 1))
+            continue
+        fi
+    fi
 
-if ! wait_for_service "http://localhost:8000/health" "CVD Service" 30; then
-    echo -e "${RED}   Failed to start CVD service${NC}"
-    exit 1
-fi
+    echo -e "\n${YELLOW}[Step $step] Starting $name Service (port $port)...${NC}"
 
-# Start Breast Cancer Service
-echo -e "\n${YELLOW}[4/5] Starting Breast Cancer Service (port 8001)...${NC}"
-if [ -d "$PROJECT_ROOT/breast_cancer/backend" ]; then
-    cd "$PROJECT_ROOT/breast_cancer"
-    nohup uvicorn backend.main:app --host 0.0.0.0 --port 8001 > "$LOG_DIR/breast_cancer.log" 2>&1 &
-    BC_PID=$!
-    echo $BC_PID > "$LOG_DIR/breast_cancer.pid"
-    echo -e "${CYAN}   Breast Cancer Service PID: $BC_PID${NC}"
+    # Determine the correct uvicorn command based on service structure
+    cd "$PROJECT_ROOT/$dir"
+    if [ "$name" = "Registry" ]; then
+        # Registry has backend/ in the path, run from backend directory
+        nohup uvicorn main:app --host 0.0.0.0 --port $port > "$log_file" 2>&1 &
+    elif [ -f "backend/main.py" ]; then
+        # Service has backend module, run from parent directory
+        cd "$PROJECT_ROOT/${dir%%/backend*}"
+        nohup uvicorn backend.main:app --host 0.0.0.0 --port $port > "$log_file" 2>&1 &
+    else
+        echo -e "${RED}   ✗ Unable to determine service structure${NC}"
+        if [ "$required" = "true" ]; then
+            exit 1
+        else
+            step=$((step + 1))
+            continue
+        fi
+    fi
+
+    SERVICE_PID=$!
+    echo $SERVICE_PID > "$pid_file"
+    echo -e "${CYAN}   $name PID: $SERVICE_PID${NC}"
     cd "$PROJECT_ROOT"
 
-    if ! wait_for_service "http://localhost:8001/health" "Breast Cancer Service" 30; then
-        echo -e "${YELLOW}   ⚠ Breast Cancer service may not be ready (check logs)${NC}"
+    # Wait for service to be ready (ML services need more time to load models)
+    timeout=60  # Give ML services enough time to load models (~30s) + startup
+    if ! wait_for_service "http://localhost:$port/health" "$name Service" $timeout; then
+        if [ "$required" = "true" ]; then
+            echo -e "${RED}   Failed to start required service: $name${NC}"
+            echo -e "${YELLOW}   Check logs: tail -f $log_file${NC}"
+            exit 1
+        else
+            echo -e "${YELLOW}   ⚠ Optional service may not be ready (check logs)${NC}"
+        fi
     fi
-else
-    echo -e "${YELLOW}   ⚠ Breast Cancer service not found (skipping)${NC}"
-fi
 
-# Start Alzheimers Service
-echo -e "\n${YELLOW}[5/5] Starting Alzheimers Service (port 8002)...${NC}"
-if [ -d "$PROJECT_ROOT/alzheimers/backend" ]; then
-    cd "$PROJECT_ROOT/alzheimers"
-    nohup uvicorn backend.main:app --host 0.0.0.0 --port 8002 > "$LOG_DIR/alzheimers.log" 2>&1 &
-    ALZ_PID=$!
-    echo $ALZ_PID > "$LOG_DIR/alzheimers.pid"
-    echo -e "${CYAN}   Alzheimers Service PID: $ALZ_PID${NC}"
-    cd "$PROJECT_ROOT"
+    step=$((step + 1))
+done
 
-    if ! wait_for_service "http://localhost:8002/health" "Alzheimers Service" 30; then
-        echo -e "${YELLOW}   ⚠ Alzheimers service may not be ready (check logs)${NC}"
-    fi
-else
-    echo -e "${YELLOW}   ⚠ Alzheimers service not found (skipping)${NC}"
-fi
-
-# Wait for services to register
+# Wait for services to register with registry
 echo -e "\n${CYAN}Waiting for services to register with registry...${NC}"
 sleep 3
 
@@ -159,8 +183,8 @@ echo -e "\n${BLUE}━━━━━━━━━━━━━━━━━━━━�
 echo -e "${BLUE}                  Services Status                           ${NC}"
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 
-SERVICES=$(curl -s "http://localhost:9000/api/v1/services" 2>/dev/null || echo "[]")
-SERVICE_COUNT=$(echo "$SERVICES" | jq '. | length' 2>/dev/null || echo "0")
+SERVICES_JSON=$(curl -s "http://localhost:9000/api/v1/services" 2>/dev/null || echo "[]")
+SERVICE_COUNT=$(echo "$SERVICES_JSON" | jq '. | length' 2>/dev/null || echo "0")
 
 echo -e "\n${GREEN}✓ Registry Service${NC}"
 echo -e "  URL: ${CYAN}http://localhost:9000${NC}"
@@ -169,24 +193,32 @@ echo -e "  Logs: ${CYAN}$LOG_DIR/registry.log${NC}"
 
 echo -e "\n${GREEN}✓ Registered Services: $SERVICE_COUNT${NC}"
 if [ "$SERVICE_COUNT" -gt "0" ]; then
-    echo "$SERVICES" | jq -r '.[] | "  • \(.service_name) - \(.base_url)"' 2>/dev/null || echo "  (Unable to parse service list)"
+    echo "$SERVICES_JSON" | jq -r '.[] | "  • \(.service_name) - \(.base_url)"' 2>/dev/null || echo "  (Unable to parse service list)"
 fi
 
 echo -e "\n${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo -e "${GREEN}     All Services Started Successfully!                     ${NC}"
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 
+# Display service URLs
 echo -e "\n${CYAN}Service URLs:${NC}"
-echo -e "  Registry:        ${CYAN}http://localhost:9000${NC}"
-echo -e "  CVD Service:     ${CYAN}http://localhost:8000${NC}"
-[ -f "$LOG_DIR/breast_cancer.pid" ] && echo -e "  Breast Cancer:   ${CYAN}http://localhost:8001${NC}"
-[ -f "$LOG_DIR/alzheimers.pid" ] && echo -e "  Alzheimers:      ${CYAN}http://localhost:8002${NC}"
+for service in "${SERVICES[@]}"; do
+    IFS=':' read -r name dir port required <<< "$service"
+    log_name=$(echo "$name" | tr '[:upper:]' '[:lower:]' | tr ' ' '_')
+    if [ -f "$LOG_DIR/${log_name}.pid" ]; then
+        printf "  %-20s ${CYAN}http://localhost:%s${NC}\n" "$name:" "$port"
+    fi
+done
 
+# Display API documentation URLs
 echo -e "\n${CYAN}API Documentation:${NC}"
-echo -e "  Registry:        ${CYAN}http://localhost:9000/docs${NC}"
-echo -e "  CVD Service:     ${CYAN}http://localhost:8000/docs${NC}"
-[ -f "$LOG_DIR/breast_cancer.pid" ] && echo -e "  Breast Cancer:   ${CYAN}http://localhost:8001/docs${NC}"
-[ -f "$LOG_DIR/alzheimers.pid" ] && echo -e "  Alzheimers:      ${CYAN}http://localhost:8002/docs${NC}"
+for service in "${SERVICES[@]}"; do
+    IFS=':' read -r name dir port required <<< "$service"
+    log_name=$(echo "$name" | tr '[:upper:]' '[:lower:]' | tr ' ' '_')
+    if [ -f "$LOG_DIR/${log_name}.pid" ]; then
+        printf "  %-20s ${CYAN}http://localhost:%s/docs${NC}\n" "$name:" "$port"
+    fi
+done
 
 echo -e "\n${CYAN}Logs Location:${NC}"
 echo -e "  $LOG_DIR/"
@@ -194,7 +226,6 @@ echo -e "  $LOG_DIR/"
 echo -e "\n${CYAN}Useful Commands:${NC}"
 echo -e "  Stop all services:        ${YELLOW}./stop_all_services.sh${NC}"
 echo -e "  View registry logs:       ${YELLOW}tail -f $LOG_DIR/registry.log${NC}"
-echo -e "  View CVD logs:            ${YELLOW}tail -f $LOG_DIR/cvd.log${NC}"
 echo -e "  List registered services: ${YELLOW}curl http://localhost:9000/api/v1/services | jq${NC}"
 echo -e "  Check health:             ${YELLOW}curl http://localhost:9000/api/v1/health/all | jq${NC}"
 

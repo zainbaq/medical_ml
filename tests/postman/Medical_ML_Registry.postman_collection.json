@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "medical-ml-registry-2025",
 		"name": "Medical ML Service Registry",
-		"description": "Complete test suite for the Medical ML Service Registry and unified interface.\n\nThis collection tests:\n- Service Registry health and endpoints\n- Service discovery and registration\n- CVD service health and predictions\n- Tag-based search\n- Aggregate health monitoring\n\nPrerequisites:\n1. Registry service running on port 9000\n2. CVD service running on port 8000\n\nStart services with:\n```\ncd registry/backend && uvicorn main:app --port 9000 --reload\ncd cardiovascular_disease && uvicorn backend.main:app --port 8000 --reload\n```",
+		"description": "Complete test suite for the Medical ML Service Registry and all medical prediction services.\n\nThis collection tests:\n- Service Registry health and endpoints\n- Service discovery and registration\n- CVD service health and predictions (port 8000)\n- Breast Cancer service health and predictions (port 8001)\n- Alzheimer's service health and predictions (port 8002)\n- Tag-based service search\n- Aggregate health monitoring\n\nPrerequisites:\n1. Set up unified virtual environment: `./setup_env.sh`\n2. Start all services: `./start_all_services.sh`\n\nThis will start:\n- Registry service on port 9000\n- Cardiovascular Disease service on port 8000\n- Breast Cancer service on port 8001\n- Alzheimer's service on port 8002\n\nAll services use the medical_ml_sdk framework and auto-register with the registry.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
@@ -68,9 +68,9 @@
 									"    pm.expect(jsonData).to.be.an('array');",
 									"});",
 									"",
-									"pm.test(\"At least one service registered\", function () {",
+									"pm.test(\"All three services registered\", function () {",
 									"    var jsonData = pm.response.json();",
-									"    pm.expect(jsonData.length).to.be.at.least(1);",
+									"    pm.expect(jsonData.length).to.equal(3);",
 									"});",
 									"",
 									"pm.test(\"Service has required fields\", function () {",
@@ -166,7 +166,101 @@
 					"response": []
 				},
 				{
-					"name": "1.4 Search Services by Tag (cardiovascular)",
+					"name": "1.4 Get Breast Cancer Service Details",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Service ID is correct\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.service_id).to.eql('breast_cancer');",
+									"});",
+									"",
+									"pm.test(\"Has schemas\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.input_schema).to.exist;",
+									"    pm.expect(jsonData.output_schema).to.exist;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:9000/api/v1/services/breast_cancer",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "9000",
+							"path": [
+								"api",
+								"v1",
+								"services",
+								"breast_cancer"
+							]
+						},
+						"description": "Retrieves detailed information about the Breast Cancer service"
+					},
+					"response": []
+				},
+				{
+					"name": "1.5 Get Alzheimer's Service Details",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Service ID is correct\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.service_id).to.eql('alzheimers');",
+									"});",
+									"",
+									"pm.test(\"Has schemas\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.input_schema).to.exist;",
+									"    pm.expect(jsonData.output_schema).to.exist;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:9000/api/v1/services/alzheimers",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "9000",
+							"path": [
+								"api",
+								"v1",
+								"services",
+								"alzheimers"
+							]
+						},
+						"description": "Retrieves detailed information about the Alzheimer's service"
+					},
+					"response": []
+				},
+				{
+					"name": "1.6 Search Services by Tag (cardiovascular)",
 					"event": [
 						{
 							"listen": "test",
@@ -221,7 +315,7 @@
 					"response": []
 				},
 				{
-					"name": "1.5 Search Services by Tag (classification)",
+					"name": "1.7 Search Services by Tag (classification)",
 					"event": [
 						{
 							"listen": "test",
@@ -231,7 +325,7 @@
 									"    pm.response.to.have.status(200);",
 									"});",
 									"",
-									"pm.test(\"Found at least one service\", function () {",
+									"pm.test(\"Found multiple services\", function () {",
 									"    var jsonData = pm.response.json();",
 									"    pm.expect(jsonData.length).to.be.at.least(1);",
 									"});"
@@ -269,7 +363,7 @@
 					"response": []
 				},
 				{
-					"name": "1.6 Aggregate Health Check",
+					"name": "1.8 Aggregate Health Check",
 					"event": [
 						{
 							"listen": "test",
@@ -279,23 +373,18 @@
 									"    pm.response.to.have.status(200);",
 									"});",
 									"",
-									"pm.test(\"Has registry status\", function () {",
+									"pm.test(\"All three services are healthy\", function () {",
 									"    var jsonData = pm.response.json();",
-									"    pm.expect(jsonData.registry).to.exist;",
-									"    pm.expect(jsonData.registry.status).to.eql('healthy');",
-									"});",
-									"",
-									"pm.test(\"Has services health data\", function () {",
-									"    var jsonData = pm.response.json();",
-									"    pm.expect(jsonData.services).to.exist;",
-									"    pm.expect(jsonData.services).to.be.an('array');",
-									"});",
-									"",
-									"pm.test(\"All services are healthy\", function () {",
-									"    var jsonData = pm.response.json();",
-									"    jsonData.services.forEach(function(service) {",
-									"        pm.expect(service.status).to.eql('healthy');",
-									"    });",
+									"    pm.expect(Object.keys(jsonData).length).to.equal(3);",
+									"    ",
+									"    pm.expect(jsonData.cardiovascular_disease).to.exist;",
+									"    pm.expect(jsonData.cardiovascular_disease.status).to.eql('healthy');",
+									"    ",
+									"    pm.expect(jsonData.breast_cancer).to.exist;",
+									"    pm.expect(jsonData.breast_cancer.status).to.eql('healthy');",
+									"    ",
+									"    pm.expect(jsonData.alzheimers).to.exist;",
+									"    pm.expect(jsonData.alzheimers.status).to.eql('healthy');",
 									"});"
 								],
 								"type": "text/javascript"
@@ -319,7 +408,7 @@
 								"all"
 							]
 						},
-						"description": "Checks health of registry and all registered services"
+						"description": "Checks health of all registered services"
 					},
 					"response": []
 				}
@@ -433,66 +522,12 @@
 								"predict"
 							]
 						},
-						"description": "Makes a prediction for a patient with low risk factors:\n- Age: 45\n- Normal blood pressure (120/80)\n- Normal cholesterol and glucose\n- Non-smoker, no alcohol, active"
+						"description": "Makes a prediction for a patient with low risk factors"
 					},
 					"response": []
 				},
 				{
-					"name": "2.3 Make CVD Prediction (Medium Risk)",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test(\"Status code is 200\", function () {",
-									"    pm.response.to.have.status(200);",
-									"});",
-									"",
-									"pm.test(\"Response has prediction\", function () {",
-									"    var jsonData = pm.response.json();",
-									"    pm.expect(jsonData).to.have.property('prediction');",
-									"});",
-									"",
-									"pm.test(\"Response has probability\", function () {",
-									"    var jsonData = pm.response.json();",
-									"    pm.expect(jsonData.probability).to.be.within(0, 1);",
-									"});"
-								],
-								"type": "text/javascript"
-							}
-						}
-					],
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"age_years\": 55.0,\n  \"gender\": 2,\n  \"height\": 170.0,\n  \"weight\": 80.0,\n  \"ap_hi\": 130,\n  \"ap_lo\": 85,\n  \"cholesterol\": 2,\n  \"gluc\": 1,\n  \"smoke\": 0,\n  \"alco\": 0,\n  \"active\": 1\n}"
-						},
-						"url": {
-							"raw": "http://localhost:8000/api/v1/predict",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "8000",
-							"path": [
-								"api",
-								"v1",
-								"predict"
-							]
-						},
-						"description": "Makes a prediction for a patient with medium risk factors:\n- Age: 55\n- Slightly elevated blood pressure (130/85)\n- Above normal cholesterol\n- Overweight"
-					},
-					"response": []
-				},
-				{
-					"name": "2.4 Make CVD Prediction (High Risk)",
+					"name": "2.3 Make CVD Prediction (High Risk)",
 					"event": [
 						{
 							"listen": "test",
@@ -541,133 +576,333 @@
 								"predict"
 							]
 						},
-						"description": "Makes a prediction for a patient with high risk factors:\n- Age: 65\n- High blood pressure (160/100)\n- High cholesterol and glucose\n- Smoker, alcohol, inactive\n- Obese"
-					},
-					"response": []
-				},
-				{
-					"name": "2.5 Test Invalid Input (Missing Fields)",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test(\"Status code is 422 (Validation Error)\", function () {",
-									"    pm.response.to.have.status(422);",
-									"});",
-									"",
-									"pm.test(\"Error indicates missing fields\", function () {",
-									"    var jsonData = pm.response.json();",
-									"    pm.expect(jsonData).to.have.property('detail');",
-									"});"
-								],
-								"type": "text/javascript"
-							}
-						}
-					],
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"age_years\": 55.0,\n  \"gender\": 2\n}"
-						},
-						"url": {
-							"raw": "http://localhost:8000/api/v1/predict",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "8000",
-							"path": [
-								"api",
-								"v1",
-								"predict"
-							]
-						},
-						"description": "Tests validation by sending incomplete data (missing required fields)"
-					},
-					"response": []
-				},
-				{
-					"name": "2.6 Test Invalid Input (Out of Range)",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test(\"Status code is 422 (Validation Error)\", function () {",
-									"    pm.response.to.have.status(422);",
-									"});",
-									"",
-									"pm.test(\"Error indicates validation failure\", function () {",
-									"    var jsonData = pm.response.json();",
-									"    pm.expect(jsonData).to.have.property('detail');",
-									"});"
-								],
-								"type": "text/javascript"
-							}
-						}
-					],
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"age_years\": -5.0,\n  \"gender\": 2,\n  \"height\": 170.0,\n  \"weight\": 80.0,\n  \"ap_hi\": 130,\n  \"ap_lo\": 85,\n  \"cholesterol\": 2,\n  \"gluc\": 1,\n  \"smoke\": 0,\n  \"alco\": 0,\n  \"active\": 1\n}"
-						},
-						"url": {
-							"raw": "http://localhost:8000/api/v1/predict",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "8000",
-							"path": [
-								"api",
-								"v1",
-								"predict"
-							]
-						},
-						"description": "Tests validation by sending invalid data (negative age)"
+						"description": "Makes a prediction for a patient with high risk factors"
 					},
 					"response": []
 				}
 			],
-			"description": "Tests the CVD service endpoints including health checks and predictions with various risk levels"
+			"description": "Tests the CVD service endpoints including health checks and predictions"
 		},
 		{
-			"name": "3. End-to-End Workflow",
+			"name": "3. Breast Cancer Service Tests",
 			"item": [
 				{
-					"name": "3.1 Discover Services",
+					"name": "3.1 Check Breast Cancer Service Health",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"exec": [
-									"// Store service data for next requests",
-									"var services = pm.response.json();",
-									"if (services.length > 0) {",
-									"    var cvdService = services.find(s => s.service_id === 'cardiovascular_disease');",
-									"    if (cvdService) {",
-									"        pm.environment.set('cvd_base_url', cvdService.base_url);",
-									"        pm.environment.set('cvd_predict_endpoint', cvdService.endpoints.predict);",
-									"    }",
-									"}",
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
 									"",
-									"pm.test(\"Services discovered successfully\", function () {",
-									"    pm.expect(services.length).to.be.at.least(1);",
+									"pm.test(\"Service is healthy\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.status).to.eql('healthy');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8001/health",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8001",
+							"path": [
+								"health"
+							]
+						},
+						"description": "Checks if the Breast Cancer service is running and healthy"
+					},
+					"response": []
+				},
+				{
+					"name": "3.2 Make Breast Cancer Prediction (Benign)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has prediction\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('prediction');",
+									"});",
+									"",
+									"pm.test(\"Response has probability\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('probability');",
+									"    pm.expect(jsonData.probability).to.be.within(0, 1);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"radius_mean\": 12.5,\n  \"texture_mean\": 18.0,\n  \"perimeter_mean\": 80.0,\n  \"area_mean\": 480.0,\n  \"smoothness_mean\": 0.08,\n  \"compactness_mean\": 0.06,\n  \"concavity_mean\": 0.04,\n  \"concave_points_mean\": 0.02,\n  \"symmetry_mean\": 0.18,\n  \"fractal_dimension_mean\": 0.06,\n  \"radius_se\": 0.3,\n  \"texture_se\": 1.0,\n  \"perimeter_se\": 2.0,\n  \"area_se\": 25.0,\n  \"smoothness_se\": 0.005,\n  \"compactness_se\": 0.02,\n  \"concavity_se\": 0.02,\n  \"concave_points_se\": 0.01,\n  \"symmetry_se\": 0.015,\n  \"fractal_dimension_se\": 0.003,\n  \"radius_worst\": 14.0,\n  \"texture_worst\": 23.0,\n  \"perimeter_worst\": 90.0,\n  \"area_worst\": 600.0,\n  \"smoothness_worst\": 0.11,\n  \"compactness_worst\": 0.15,\n  \"concavity_worst\": 0.12,\n  \"concave_points_worst\": 0.06,\n  \"symmetry_worst\": 0.25,\n  \"fractal_dimension_worst\": 0.075\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8001/api/v1/predict",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8001",
+							"path": [
+								"api",
+								"v1",
+								"predict"
+							]
+						},
+						"description": "Makes a prediction for tumor features suggesting benign"
+					},
+					"response": []
+				},
+				{
+					"name": "3.3 Make Breast Cancer Prediction (Malignant)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has prediction\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('prediction');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"radius_mean\": 20.5,\n  \"texture_mean\": 28.0,\n  \"perimeter_mean\": 140.0,\n  \"area_mean\": 1300.0,\n  \"smoothness_mean\": 0.12,\n  \"compactness_mean\": 0.25,\n  \"concavity_mean\": 0.28,\n  \"concave_points_mean\": 0.14,\n  \"symmetry_mean\": 0.22,\n  \"fractal_dimension_mean\": 0.08,\n  \"radius_se\": 0.8,\n  \"texture_se\": 1.5,\n  \"perimeter_se\": 6.0,\n  \"area_se\": 100.0,\n  \"smoothness_se\": 0.008,\n  \"compactness_se\": 0.05,\n  \"concavity_se\": 0.06,\n  \"concave_points_se\": 0.03,\n  \"symmetry_se\": 0.025,\n  \"fractal_dimension_se\": 0.006,\n  \"radius_worst\": 25.0,\n  \"texture_worst\": 35.0,\n  \"perimeter_worst\": 170.0,\n  \"area_worst\": 1900.0,\n  \"smoothness_worst\": 0.16,\n  \"compactness_worst\": 0.45,\n  \"concavity_worst\": 0.50,\n  \"concave_points_worst\": 0.22,\n  \"symmetry_worst\": 0.35,\n  \"fractal_dimension_worst\": 0.12\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8001/api/v1/predict",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8001",
+							"path": [
+								"api",
+								"v1",
+								"predict"
+							]
+						},
+						"description": "Makes a prediction for tumor features suggesting malignant"
+					},
+					"response": []
+				}
+			],
+			"description": "Tests the Breast Cancer service endpoints including health checks and predictions"
+		},
+		{
+			"name": "4. Alzheimer's Service Tests",
+			"item": [
+				{
+					"name": "4.1 Check Alzheimer's Service Health",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Service is healthy\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.status).to.eql('healthy');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8002/health",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8002",
+							"path": [
+								"health"
+							]
+						},
+						"description": "Checks if the Alzheimer's service is running and healthy"
+					},
+					"response": []
+				},
+				{
+					"name": "4.2 Make Alzheimer's Prediction (No Dementia)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has prediction\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('prediction');",
+									"});",
+									"",
+									"pm.test(\"Response has probability\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('probability');",
+									"    pm.expect(jsonData.probability).to.be.within(0, 1);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"gender\": \"M\",\n  \"age\": 55,\n  \"EDUC\": 16,\n  \"SES\": 2,\n  \"MMSE\": 29,\n  \"CDR\": 0.0,\n  \"eTIV\": 1500,\n  \"nWBV\": 0.78,\n  \"ASF\": 1.2\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8002/api/v1/predict",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8002",
+							"path": [
+								"api",
+								"v1",
+								"predict"
+							]
+						},
+						"description": "Makes a prediction for a patient with no signs of dementia"
+					},
+					"response": []
+				},
+				{
+					"name": "4.3 Make Alzheimer's Prediction (Dementia)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has prediction\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('prediction');",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"gender\": \"F\",\n  \"age\": 78,\n  \"EDUC\": 12,\n  \"SES\": 3,\n  \"MMSE\": 18,\n  \"CDR\": 1.0,\n  \"eTIV\": 1400,\n  \"nWBV\": 0.65,\n  \"ASF\": 1.4\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8002/api/v1/predict",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8002",
+							"path": [
+								"api",
+								"v1",
+								"predict"
+							]
+						},
+						"description": "Makes a prediction for a patient with signs of dementia"
+					},
+					"response": []
+				}
+			],
+			"description": "Tests the Alzheimer's service endpoints including health checks and predictions"
+		},
+		{
+			"name": "5. End-to-End Workflow",
+			"item": [
+				{
+					"name": "5.1 Discover All Services",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"All three services discovered\", function () {",
+									"    var services = pm.response.json();",
+									"    pm.expect(services.length).to.equal(3);",
+									"    ",
+									"    // Store service URLs for later use",
+									"    services.forEach(function(service) {",
+									"        if (service.service_id === 'cardiovascular_disease') {",
+									"            pm.environment.set('cvd_url', service.base_url);",
+									"        } else if (service.service_id === 'breast_cancer') {",
+									"            pm.environment.set('bc_url', service.base_url);",
+									"        } else if (service.service_id === 'alzheimers') {",
+									"            pm.environment.set('alz_url', service.base_url);",
+									"        }",
+									"    });",
 									"});"
 								],
 								"type": "text/javascript"
@@ -690,18 +925,18 @@
 								"services"
 							]
 						},
-						"description": "Step 1: Frontend discovers available services"
+						"description": "Frontend discovers all available medical prediction services"
 					},
 					"response": []
 				},
 				{
-					"name": "3.2 Get Service Schema",
+					"name": "5.2 Get Service Schemas",
 					"event": [
 						{
 							"listen": "test",
 							"script": {
 								"exec": [
-									"pm.test(\"Schema retrieved successfully\", function () {",
+									"pm.test(\"CVD schema retrieved\", function () {",
 									"    var jsonData = pm.response.json();",
 									"    pm.expect(jsonData.input_schema).to.exist;",
 									"    pm.expect(jsonData.output_schema).to.exist;",
@@ -728,59 +963,12 @@
 								"cardiovascular_disease"
 							]
 						},
-						"description": "Step 2: Frontend gets service schema to build form"
+						"description": "Frontend gets service schema to dynamically build input form"
 					},
 					"response": []
 				},
 				{
-					"name": "3.3 Make Prediction",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test(\"Prediction made successfully\", function () {",
-									"    pm.response.to.have.status(200);",
-									"    var jsonData = pm.response.json();",
-									"    pm.expect(jsonData).to.have.property('prediction');",
-									"    pm.expect(jsonData).to.have.property('probability');",
-									"});"
-								],
-								"type": "text/javascript"
-							}
-						}
-					],
-					"request": {
-						"method": "POST",
-						"header": [
-							{
-								"key": "Content-Type",
-								"value": "application/json"
-							}
-						],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"age_years\": 55.0,\n  \"gender\": 2,\n  \"height\": 170.0,\n  \"weight\": 80.0,\n  \"ap_hi\": 130,\n  \"ap_lo\": 85,\n  \"cholesterol\": 2,\n  \"gluc\": 1,\n  \"smoke\": 0,\n  \"alco\": 0,\n  \"active\": 1\n}"
-						},
-						"url": {
-							"raw": "http://localhost:8000/api/v1/predict",
-							"protocol": "http",
-							"host": [
-								"localhost"
-							],
-							"port": "8000",
-							"path": [
-								"api",
-								"v1",
-								"predict"
-							]
-						},
-						"description": "Step 3: Frontend makes prediction using discovered service"
-					},
-					"response": []
-				},
-				{
-					"name": "3.4 Check All Health",
+					"name": "5.3 Monitor System Health",
 					"event": [
 						{
 							"listen": "test",
@@ -788,8 +976,7 @@
 								"exec": [
 									"pm.test(\"All services healthy\", function () {",
 									"    var jsonData = pm.response.json();",
-									"    pm.expect(jsonData.registry.status).to.eql('healthy');",
-									"    jsonData.services.forEach(function(service) {",
+									"    Object.values(jsonData).forEach(function(service) {",
 									"        pm.expect(service.status).to.eql('healthy');",
 									"    });",
 									"});"
@@ -815,12 +1002,12 @@
 								"all"
 							]
 						},
-						"description": "Step 4: Frontend monitors system health"
+						"description": "Frontend monitors overall system health"
 					},
 					"response": []
 				}
 			],
-			"description": "Complete end-to-end workflow simulating how a frontend would use the unified interface"
+			"description": "Complete end-to-end workflow simulating how a frontend application would interact with the unified medical ML service registry"
 		}
 	],
 	"event": [

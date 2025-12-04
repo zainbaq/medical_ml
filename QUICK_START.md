@@ -46,8 +46,16 @@ This will:
 [3/5] Starting Cardiovascular Disease Service (port 8000)...
    ✓ CVD Service is ready!
 
-✓ Registered Services: 1
+[4/5] Starting Breast Cancer Service (port 8001)...
+   ✓ Breast Cancer Service is ready!
+
+[5/5] Starting Alzheimers Service (port 8002)...
+   ✓ Alzheimers Service is ready!
+
+✓ Registered Services: 3
   • Cardiovascular Disease Prediction API - http://localhost:8000
+  • Breast Cancer Prediction API - http://localhost:8001
+  • Alzheimer's Disease Prediction API - http://localhost:8002
 ```
 
 ### Manual Startup (Individual Services)
@@ -217,28 +225,36 @@ Before running the collection, ensure services are running:
 
 ### What Gets Tested
 
-The Postman collection includes **16 comprehensive tests**:
+The Postman collection includes **53 comprehensive tests** across 18 test cases:
 
-**Section 1: Registry Service Tests (6 tests)**
+**Section 1: Registry Service Tests (8 tests)**
 - ✅ Registry health check
 - ✅ List all registered services
-- ✅ Get service details with schemas
+- ✅ Get CVD service details with schemas
+- ✅ Get Breast Cancer service details
+- ✅ Get Alzheimer's service details
 - ✅ Search by tags (cardiovascular)
 - ✅ Search by tags (classification)
 - ✅ Aggregate health monitoring
 
-**Section 2: CVD Service Tests (6 tests)**
+**Section 2: CVD Service Tests (8 tests)**
 - ✅ CVD service health check
 - ✅ Prediction with low risk patient
-- ✅ Prediction with medium risk patient
 - ✅ Prediction with high risk patient
-- ✅ Validation test (missing fields)
-- ✅ Validation test (invalid data)
 
-**Section 3: End-to-End Workflow (4 tests)**
-- ✅ Discover services (frontend simulation)
+**Section 3: Breast Cancer Service Tests (5 tests)**
+- ✅ Breast Cancer service health check
+- ✅ Prediction for benign tumor
+- ✅ Prediction for malignant tumor
+
+**Section 4: Alzheimer's Service Tests (5 tests)**
+- ✅ Alzheimer's service health check
+- ✅ Prediction for no dementia case
+- ✅ Prediction for dementia case
+
+**Section 5: End-to-End Workflow (3 tests)**
+- ✅ Discover all services (frontend simulation)
 - ✅ Get schemas for dynamic forms
-- ✅ Make prediction
 - ✅ Monitor system health
 
 ### Expected Results
@@ -402,9 +418,9 @@ curl -X POST http://localhost:8000/api/v1/predict \
    - Explore service discovery
 
 6. **Add more services:**
-   - Migrate breast_cancer and alzheimers to use SDK
-   - They'll auto-register when started
-   - Tests will automatically discover them
+   - All current services use the unified SDK
+   - New services will auto-register when started
+   - Tests automatically discover new services
 
 ---
 

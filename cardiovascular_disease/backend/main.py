@@ -162,6 +162,7 @@ async def health_check():
 
     return HealthResponse(
         status="healthy" if model_loader.is_loaded() else "degraded",
+        service=settings.SERVICE_NAME,
         model_loaded=model_loader.is_loaded(),
         model_name=model_info.get('model_name') if model_info else None,
         version=settings.SERVICE_VERSION

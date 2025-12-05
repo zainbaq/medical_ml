@@ -4,13 +4,94 @@ Complete API reference for building frontend applications that interact with the
 
 ## Table of Contents
 
-1. [Architecture Overview](#architecture-overview)
-2. [Service Registry API](#service-registry-api)
-3. [Cardiovascular Disease API](#cardiovascular-disease-api)
-4. [Breast Cancer API](#breast-cancer-api)
-5. [Alzheimer's Disease API](#alzheimers-disease-api)
-6. [Frontend Integration Guide](#frontend-integration-guide)
-7. [Error Handling](#error-handling)
+1. [Setup and Installation](#setup-and-installation)
+2. [Architecture Overview](#architecture-overview)
+3. [Service Registry API](#service-registry-api)
+4. [Cardiovascular Disease API](#cardiovascular-disease-api)
+5. [Breast Cancer API](#breast-cancer-api)
+6. [Alzheimer's Disease API](#alzheimers-disease-api)
+7. [Frontend Integration Guide](#frontend-integration-guide)
+8. [Error Handling](#error-handling)
+
+---
+
+## Setup and Installation
+
+### Prerequisites
+
+- Python 3.8 or higher
+- pip (Python package manager)
+
+### Initial Setup
+
+1. **Create and activate a virtual environment:**
+
+   ```bash
+   # Navigate to the project root
+   cd medical_ml
+
+   # Create virtual environment
+   python3 -m venv venv
+
+   # Activate on Linux/Mac
+   source venv/bin/activate
+
+   # Activate on Windows
+   venv\Scripts\activate
+   ```
+
+2. **Run the setup script:**
+
+   ```bash
+   ./setup.sh
+   ```
+
+   This will:
+   - Install the `medical-ml-sdk` shared library
+   - Install dependencies for all services
+   - Verify the installation
+
+### Starting Services
+
+**Start all services at once:**
+```bash
+./start_all_services.sh
+```
+
+**Or start services individually:**
+```bash
+# Service Registry (required for service discovery)
+./registry/start_registry.sh
+
+# Prediction services
+./breast_cancer/start_api.sh
+./alzheimers/start_api.sh
+./cardiovascular_disease/start_api.sh
+```
+
+### Deployment on AWS/Remote Servers
+
+When deploying on a remote server (e.g., AWS EC2):
+
+1. **Clone the repository and create virtual environment:**
+   ```bash
+   git clone <repository-url> medical_ml
+   cd medical_ml
+   python3 -m venv venv
+   source venv/bin/activate
+   ```
+
+2. **Run setup:**
+   ```bash
+   ./setup.sh
+   ```
+
+3. **Start services:**
+   ```bash
+   ./start_all_services.sh
+   ```
+
+**Note:** Make sure the virtual environment is activated before starting any services. Each startup script assumes you're already in the activated virtual environment.
 
 ---
 
@@ -21,9 +102,9 @@ Complete API reference for building frontend applications that interact with the
 | Service | Base URL | Port |
 |---------|----------|------|
 | Registry | `http://localhost:9000` | 9000 |
-| CVD Service | `http://localhost:8000` | 8000 |
-| Breast Cancer | `http://localhost:8001` | 8001 |
-| Alzheimer's | `http://localhost:8002` | 8002 |
+| Breast Cancer | `http://localhost:8000` | 8000 |
+| Alzheimer's | `http://localhost:8001` | 8001 |
+| CVD Service | `http://localhost:8003` | 8003 |
 
 ### API Versioning
 
@@ -61,8 +142,8 @@ curl http://localhost:9000/api/v1/services
     "service_name": "Cardiovascular Disease Prediction API",
     "version": "1.0.0",
     "description": "Predicts cardiovascular disease risk from patient data",
-    "base_url": "http://localhost:8000",
-    "port": 8000,
+    "base_url": "http://localhost:8003",
+    "port": 8003,
     "endpoints": {
       "predict": "/api/v1/predict",
       "health": "/health",
@@ -141,8 +222,8 @@ curl http://localhost:9000/api/v1/services/cardiovascular_disease
   "service_name": "Cardiovascular Disease Prediction API",
   "version": "1.0.0",
   "description": "Predicts cardiovascular disease risk from patient data",
-  "base_url": "http://localhost:8000",
-  "port": 8000,
+  "base_url": "http://localhost:8003",
+  "port": 8003,
   "endpoints": {
     "predict": "/api/v1/predict",
     "health": "/health",
@@ -330,7 +411,7 @@ curl http://localhost:9000/api/v1/health/all
   "cardiovascular_disease": {
     "service_name": "Cardiovascular Disease Prediction API",
     "status": "healthy",
-    "base_url": "http://localhost:8000",
+    "base_url": "http://localhost:8003",
     "last_heartbeat": null
   },
   "breast_cancer": {
@@ -393,7 +474,7 @@ Predicts cardiovascular disease risk from patient vitals and lifestyle factors.
 
 ### Base Information
 
-- **Base URL:** `http://localhost:8000`
+- **Base URL:** `http://localhost:8003`
 - **Service ID:** `cardiovascular_disease`
 - **Model:** Gradient Boosting Classifier
 - **Accuracy:** 73.7% | ROC-AUC: 0.80
@@ -461,7 +542,7 @@ Content-Type: application/json
 **Frontend Usage:**
 ```javascript
 async function predictCVD(patientData) {
-  const response = await fetch('http://localhost:8000/api/v1/predict', {
+  const response = await fetch('http://localhost:8003/api/v1/predict', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(patientData)
@@ -1058,7 +1139,7 @@ function CVDPrediction() {
     setError(null);
 
     try {
-      const response = await fetch('http://localhost:8000/api/v1/predict', {
+      const response = await fetch('http://localhost:8003/api/v1/predict', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
@@ -1249,7 +1330,7 @@ const alzhValidators = {
 When services are running, visit these URLs for interactive Swagger documentation:
 
 - **Registry**: http://localhost:9000/docs
-- **CVD Service**: http://localhost:8000/docs
+- **CVD Service**: http://localhost:8003/docs
 - **Breast Cancer**: http://localhost:8001/docs
 - **Alzheimer's**: http://localhost:8002/docs
 

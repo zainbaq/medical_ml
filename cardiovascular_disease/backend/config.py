@@ -26,7 +26,7 @@ class Settings(BaseServiceConfig):
     MODELS_DIR: Path = BASE_DIR / "models"
 
     # Server
-    PORT: int = 8000
+    PORT: int = 8003
 
     # Model (service-specific)
     MODEL_PATH: str = ""

@@ -28,9 +28,9 @@ pip install -q -r backend/requirements.txt
 # Start server from cardiovascular_disease directory
 echo ""
 echo "Starting FastAPI server..."
-echo "API will be available at: http://localhost:8000"
-echo "Documentation at: http://localhost:8000/docs"
+echo "API will be available at: http://localhost:8003"
+echo "Documentation at: http://localhost:8003/docs"
 echo ""
 echo "Press CTRL+C to stop the server"
 echo ""
-uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
+uvicorn backend.main:app --host 0.0.0.0 --port 8003 --reload

@@ -4,7 +4,7 @@
 #
 # This script starts all medical ML services that use the medical_ml_sdk framework:
 #   1. Registry Service (port 9000) - Central service registry
-#   2. Cardiovascular Disease Service (port 8000)
+#   2. Cardiovascular Disease Service (port 8003)
 #   3. Breast Cancer Service (port 8001)
 #   4. Alzheimers Service (port 8002)
 #
@@ -51,7 +51,7 @@ mkdir -p "$LOG_DIR"
 # Format: "service_name:directory:port:required"
 declare -a SERVICES=(
     "Registry:registry/backend:9000:true"
-    "Cardiovascular Disease:cardiovascular_disease:8000:true"
+    "Cardiovascular Disease:cardiovascular_disease:8003:true"
     "Breast Cancer:breast_cancer:8001:false"
     "Alzheimers:alzheimers:8002:false"
 )

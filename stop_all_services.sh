@@ -24,7 +24,7 @@ LOG_DIR="$PROJECT_ROOT/logs"
 # Format: "service_name:directory:port:required"
 declare -a SERVICES=(
     "Registry:registry/backend:9000:true"
-    "Cardiovascular Disease:cardiovascular_disease:8000:true"
+    "Cardiovascular Disease:cardiovascular_disease:8003:true"
     "Breast Cancer:breast_cancer:8001:false"
     "Alzheimers:alzheimers:8002:false"
 )

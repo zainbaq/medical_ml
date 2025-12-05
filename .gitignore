@@ -157,7 +157,20 @@ processed/
 *.7z
 
 # Model files and checkpoints
-models/
+# Note: We use */models/ to ignore model directories but not backend/models/ packages
+*/models/*.pkl
+*/models/*.pickle
+*/models/*.joblib
+*/models/*.h5
+*/models/*.hdf5
+*/models/*.pth
+*/models/*.pt
+*/models/*.ckpt
+*/models/*.pb
+*/models/*.onnx
+*/models/*.tflite
+*/models/*.keras
+*/models/*.json
 saved_models/
 checkpoints/
 *.h5

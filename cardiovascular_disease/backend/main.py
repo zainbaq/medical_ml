@@ -8,8 +8,10 @@ import logging
 
 from .config import settings
 from .models.schemas import HealthResponse, PatientData, PredictionResponse
+from .models.schemas_v2 import PatientDataV2, PredictionResponseV2
 from .models.ml_model import model_loader
 from .routes import predict
+from .routes import predict_v2
 
 # Import SDK components for service registration
 from medical_ml_sdk.plugin.registry_client import RegistryClient
@@ -57,13 +59,19 @@ async def lifespan(app: FastAPI):
                 base_url=f"http://localhost:{settings.PORT}",
                 port=settings.PORT,
                 endpoints={
-                    "predict": f"{settings.API_PREFIX}/predict",
+                    # v1 endpoints (backward compatible)
+                    "predict_v1": f"{settings.API_PREFIX}/predict",
                     "health": "/health",
-                    "model_info": f"{settings.API_PREFIX}/model-info"
+                    "model_info_v1": f"{settings.API_PREFIX}/model-info",
+                    # v2 endpoints (enhanced)
+                    "predict_v2": "/api/v2/predict",
+                    "model_info_v2": "/api/v2/model-info",
+                    "health_v2": "/api/v2/health",
+                    "feature_requirements": "/api/v2/feature-requirements"
                 },
-                input_schema=PatientData.model_json_schema(),
-                output_schema=PredictionResponse.model_json_schema(),
-                tags=["cardiovascular", "disease", "classification", "health"],
+                input_schema=PatientDataV2.model_json_schema(),
+                output_schema=PredictionResponseV2.model_json_schema(),
+                tags=["cardiovascular", "disease", "classification", "health", "explainability"],
                 capabilities=model_loader.get_model_info()
             )
 
@@ -122,10 +130,18 @@ app.add_middleware(
 )
 
 # Include routers
+# v1 API (backward compatible)
 app.include_router(
     predict.router,
     prefix=settings.API_PREFIX,
-    tags=["Predictions"]
+    tags=["Predictions v1"]
+)
+
+# v2 API (enhanced with explainability)
+app.include_router(
+    predict_v2.router,
+    prefix="/api/v2",
+    tags=["Predictions v2"]
 )
 
 

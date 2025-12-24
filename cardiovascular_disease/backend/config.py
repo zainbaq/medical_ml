@@ -5,6 +5,50 @@ from pathlib import Path
 from medical_ml_sdk.core.config import BaseServiceConfig
 
 
+# Performance targets for model evaluation
+PERFORMANCE_TARGETS = {
+    'roc_auc': 0.82,
+    'accuracy': 0.78,
+    'sensitivity': 0.75,
+    'specificity': 0.70
+}
+
+# XGBoost hyperparameter optimization config
+XGBOOST_CONFIG = {
+    'n_trials': 100,
+    'timeout': 3600,
+    'early_stopping_rounds': 50,
+    'cv_folds': 5
+}
+
+# Dataset configuration
+DATASETS = {
+    'kaggle': {
+        'name': 'Kaggle CVD Dataset',
+        'path': 'data/cardio_train.csv',
+        'records': 70000
+    },
+    'uci': {
+        'name': 'UCI Heart Disease',
+        'path': 'data/raw/uci_heart.csv',
+        'records': 920
+    },
+    'nhanes': {
+        'name': 'NHANES 2017-2018',
+        'path': 'data/raw/nhanes_cvd.csv',
+        'records': 5000
+    },
+    'framingham': {
+        'name': 'Framingham Heart Study',
+        'path': 'data/raw/framingham.csv',
+        'records': 4434
+    }
+}
+
+# Cross-validation folds
+CV_FOLDS = 5
+
+
 class Settings(BaseServiceConfig):
     """Application settings - extends BaseServiceConfig from SDK"""
 

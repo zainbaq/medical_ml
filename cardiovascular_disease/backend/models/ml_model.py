@@ -2,7 +2,10 @@
 ML Model loader and inference
 """
 from medical_ml_sdk.core.model_loader import BaseModelLoader
-from ..config import settings
+try:
+    from ..config import settings
+except ImportError:
+    from config import settings
 import logging
 
 logger = logging.getLogger(__name__)

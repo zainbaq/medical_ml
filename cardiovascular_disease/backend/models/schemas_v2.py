@@ -9,9 +9,21 @@ v2 Features:
 - Modifiable risk recommendations
 """
 
-from pydantic import BaseModel, Field, field_validator, model_validator
-from typing import Optional, List, Tuple
+from pydantic import BaseModel, Field, field_validator, model_validator, BeforeValidator
+from typing import Optional, List, Tuple, Annotated, Any
 from enum import Enum
+
+
+def empty_string_to_none(v: Any) -> Any:
+    """Convert empty strings to None for optional fields."""
+    if v == "" or v == "null":
+        return None
+    return v
+
+
+# Type alias for optional fields that should treat empty strings as None
+OptionalFloat = Annotated[Optional[float], BeforeValidator(empty_string_to_none)]
+OptionalInt = Annotated[Optional[int], BeforeValidator(empty_string_to_none)]
 
 
 class RiskCategory(str, Enum):
@@ -114,55 +126,56 @@ class PatientDataV2(BaseModel):
     )
 
     # NEW: Optional enhanced fields (v2)
-    hdl_cholesterol: Optional[float] = Field(
+    # Using OptionalFloat/OptionalInt to handle empty strings from frontend forms
+    hdl_cholesterol: OptionalFloat = Field(
         None,
         ge=20,
         le=100,
         description="HDL cholesterol in mg/dL (optional, improves accuracy)"
     )
-    ldl_cholesterol: Optional[float] = Field(
+    ldl_cholesterol: OptionalFloat = Field(
         None,
         ge=40,
         le=300,
         description="LDL cholesterol in mg/dL (optional)"
     )
-    total_cholesterol: Optional[float] = Field(
+    total_cholesterol: OptionalFloat = Field(
         None,
         ge=100,
         le=400,
         description="Total cholesterol in mg/dL (optional)"
     )
-    triglycerides: Optional[float] = Field(
+    triglycerides: OptionalFloat = Field(
         None,
         ge=30,
         le=1000,
         description="Triglycerides in mg/dL (optional)"
     )
-    fasting_glucose: Optional[float] = Field(
+    fasting_glucose: OptionalFloat = Field(
         None,
         ge=40,
         le=500,
         description="Fasting glucose in mg/dL (optional)"
     )
-    hba1c: Optional[float] = Field(
+    hba1c: OptionalFloat = Field(
         None,
         ge=3.0,
         le=15.0,
         description="HbA1c percentage (optional)"
     )
-    bp_medication: Optional[int] = Field(
+    bp_medication: OptionalInt = Field(
         None,
         ge=0,
         le=1,
         description="Currently on BP medication: 0=no, 1=yes (optional)"
     )
-    diabetes: Optional[int] = Field(
+    diabetes: OptionalInt = Field(
         None,
         ge=0,
         le=1,
         description="Diagnosed diabetes: 0=no, 1=yes (optional)"
     )
-    family_history_cvd: Optional[int] = Field(
+    family_history_cvd: OptionalInt = Field(
         None,
         ge=0,
         le=1,
@@ -319,6 +332,23 @@ class PredictionResponseV2(BaseModel):
         description="Medical disclaimer"
     )
 
+    # NEW: Data source transparency (v2.1)
+    training_data_sources: List[str] = Field(
+        default_factory=lambda: ["kaggle", "nhanes", "framingham"],
+        description="Datasets used to train the model"
+    )
+    excluded_data_sources: List[str] = Field(
+        default_factory=lambda: ["uci"],
+        description="Datasets excluded from training"
+    )
+    data_quality_note: str = Field(
+        default=(
+            "Model trained on ~80K records from Kaggle (70K), NHANES (5.8K), and "
+            "Framingham (4K) datasets. UCI excluded due to missing anthropometric features."
+        ),
+        description="Note about training data composition and quality"
+    )
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -401,6 +431,22 @@ class ModelInfoResponseV2(BaseModel):
     available_tiers: List[str] = Field(
         ...,
         description="Available prediction tiers"
+    )
+
+    # NEW: Training data transparency (v2.1)
+    training_data_info: dict = Field(
+        default_factory=lambda: {
+            "kaggle": {"records": 70000, "weight": 1.0, "description": "Original Kaggle cardiovascular dataset"},
+            "nhanes": {"records": 5800, "weight": 1.2, "description": "NHANES 2017-2020 cardiovascular data"},
+            "framingham": {"records": 4000, "weight": 1.3, "description": "Framingham Heart Study dataset"}
+        },
+        description="Information about datasets used for training"
+    )
+    excluded_data_info: dict = Field(
+        default_factory=lambda: {
+            "uci": {"reason": "Missing anthropometric features (height, weight, lifestyle data)"}
+        },
+        description="Datasets excluded from training and reasons"
     )
 
 

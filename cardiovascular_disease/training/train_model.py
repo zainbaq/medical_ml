@@ -21,9 +21,15 @@ warnings.filterwarnings('ignore')
 from config import (
     DATA_FILE, MODELS_DIR, TEST_SIZE, RANDOM_STATE, CV_FOLDS,
     MODELS_CONFIG, OUTLIER_THRESHOLDS, FEATURE_COLUMNS, TARGET_COLUMN,
-    USE_IMPROVED_FEATURES, INCLUDE_EXPERIMENTAL_FEATURES, REMOVE_WEIGHT
+    USE_IMPROVED_FEATURES, INCLUDE_EXPERIMENTAL_FEATURES, REMOVE_WEIGHT,
+    REMOVE_HEIGHT, DATASETS, UNIFIED_TRAINING_FILE
 )
 from improved_features import ImprovedFeatureEngineer
+
+# Import DataHarmonizer for multi-dataset training
+import sys
+sys.path.insert(0, str(Path(__file__).parent.parent / 'data'))
+from harmonize import DataHarmonizer
 
 
 class CardiovascularModelTrainer:
@@ -42,53 +48,142 @@ class CardiovascularModelTrainer:
         self.scaler = StandardScaler()
         self.feature_names = None
         self.metrics = {}
+        self.sample_weights = None
+        self.data_sources = {}
         # Feature engineering configuration
         self.use_improved_features = USE_IMPROVED_FEATURES
         self.include_experimental = INCLUDE_EXPERIMENTAL_FEATURES
         self.remove_weight = REMOVE_WEIGHT
+        self.remove_height = REMOVE_HEIGHT
 
     def load_data(self):
-        """Load the cardiovascular dataset"""
+        """Load the cardiovascular dataset (single dataset - Kaggle only)"""
         print(f"Loading data from {DATA_FILE}...")
         df = pd.read_csv(DATA_FILE, delimiter=';')
         print(f"Loaded {len(df)} records with {len(df.columns)} columns")
+        self.data_sources = {'kaggle': {'records': len(df), 'weight': 1.0}}
         return df
 
-    def preprocess_data(self, df):
+    def load_multi_dataset(self):
+        """
+        Load and harmonize multiple cardiovascular datasets.
+
+        Uses DataHarmonizer to merge enabled datasets (Kaggle, NHANES, Framingham).
+        UCI is excluded due to missing anthropometric features.
+
+        Returns:
+            Tuple of (DataFrame, sample_weights array)
+        """
+        print("\n" + "="*60)
+        print("MULTI-DATASET TRAINING MODE")
+        print("="*60)
+
+        # Get enabled datasets from config
+        enabled_datasets = [k for k, v in DATASETS.items() if v.get('enabled', False)]
+        weights = {k: v['weight'] for k, v in DATASETS.items() if v.get('enabled', False)}
+
+        print(f"Enabled datasets: {enabled_datasets}")
+        print(f"Sample weights: {weights}")
+
+        # Check if cached unified dataset exists
+        if UNIFIED_TRAINING_FILE.exists():
+            print(f"\nLoading cached unified dataset from {UNIFIED_TRAINING_FILE}")
+            df = pd.read_csv(UNIFIED_TRAINING_FILE)
+            print(f"Loaded {len(df)} records from unified dataset")
+        else:
+            # Use DataHarmonizer to merge datasets
+            print("\nHarmonizing datasets...")
+            harmonizer = DataHarmonizer(data_dir=Path(__file__).parent.parent / 'data')
+            df = harmonizer.merge_datasets(datasets=enabled_datasets, weights=weights)
+            df = harmonizer.create_feature_availability_indicators(df)
+
+            # Save for future use
+            harmonizer.save_unified_dataset(df)
+            print(f"Saved unified dataset for caching")
+
+        # Extract sample weights
+        if 'sample_weight' in df.columns:
+            sample_weights = df['sample_weight'].values
+        else:
+            sample_weights = np.ones(len(df))
+
+        # Track data sources
+        source_counts = df['data_source'].value_counts().to_dict()
+        self.data_sources = {
+            source: {'records': count, 'weight': weights.get(source, 1.0)}
+            for source, count in source_counts.items()
+        }
+
+        print(f"\nData sources loaded:")
+        for source, info in self.data_sources.items():
+            print(f"  - {source}: {info['records']} records (weight: {info['weight']})")
+        print(f"Total: {len(df)} records")
+
+        return df, sample_weights
+
+    def preprocess_data(self, df, is_multi_dataset=False):
         """
         Comprehensive data preprocessing including:
-        - Converting age from days to years
+        - Converting age from days to years (single dataset only)
         - Handling outliers
         - Feature engineering (BMI)
         - Removing invalid records
+
+        Args:
+            df: Input DataFrame
+            is_multi_dataset: If True, assumes data is already harmonized
         """
         print("\nPreprocessing data...")
         df = df.copy()
-
-        # Convert age from days to years
-        df['age_years'] = (df['age'] / 365.25).round(1)
-        df = df.drop('age', axis=1)
-
-        # Calculate BMI
-        df['bmi'] = (df['weight'] / ((df['height'] / 100) ** 2)).round(2)
-
-        # Remove outliers
         initial_count = len(df)
-        for feature, (min_val, max_val) in OUTLIER_THRESHOLDS.items():
-            df = df[(df[feature] >= min_val) & (df[feature] <= max_val)]
 
-        print(f"Removed {initial_count - len(df)} outlier records")
+        if is_multi_dataset:
+            # Multi-dataset: data is already harmonized with age_years and bmi
+            print("Multi-dataset mode: data already harmonized")
 
-        # Remove records where diastolic > systolic
-        df = df[df['ap_lo'] < df['ap_hi']]
+            # Remove records with missing required features
+            required_cols = ['age_years', 'gender', 'bmi', 'ap_hi', 'ap_lo',
+                           'cholesterol', 'gluc', 'smoke']
+            for col in required_cols:
+                if col in df.columns:
+                    df = df[df[col].notna()]
 
-        # Remove invalid values
-        df = df[df['height'] > 0]
-        df = df[df['weight'] > 0]
+            # Apply BP validation
+            df = df[df['ap_lo'] < df['ap_hi']]
 
-        # Drop ID column
-        df = df.drop('id', axis=1)
+            # Apply BMI range validation
+            df = df[(df['bmi'] >= 12) & (df['bmi'] <= 60)]
 
+            # Apply BP range validation
+            df = df[(df['ap_hi'] >= 70) & (df['ap_hi'] <= 250)]
+            df = df[(df['ap_lo'] >= 40) & (df['ap_lo'] <= 150)]
+
+        else:
+            # Single dataset (Kaggle): needs full preprocessing
+            # Convert age from days to years
+            df['age_years'] = (df['age'] / 365.25).round(1)
+            df = df.drop('age', axis=1)
+
+            # Calculate BMI
+            df['bmi'] = (df['weight'] / ((df['height'] / 100) ** 2)).round(2)
+
+            # Remove outliers using thresholds
+            for feature, (min_val, max_val) in OUTLIER_THRESHOLDS.items():
+                if feature in df.columns:
+                    df = df[(df[feature] >= min_val) & (df[feature] <= max_val)]
+
+            # Remove records where diastolic > systolic
+            df = df[df['ap_lo'] < df['ap_hi']]
+
+            # Remove invalid values
+            df = df[df['height'] > 0]
+            df = df[df['weight'] > 0]
+
+            # Drop ID column
+            if 'id' in df.columns:
+                df = df.drop('id', axis=1)
+
+        print(f"Removed {initial_count - len(df)} invalid/outlier records")
         print(f"Final dataset: {len(df)} records")
 
         # Apply improved feature engineering if enabled
@@ -110,11 +205,18 @@ class CardiovascularModelTrainer:
             feature_cols.remove('weight')
             print(f"Removed 'weight' feature (redundant with BMI)")
 
+        # Handle height removal if configured (use BMI only for multi-dataset compatibility)
+        if self.remove_height and 'height' in feature_cols:
+            feature_cols.remove('height')
+            print(f"Removed 'height' feature (using BMI only for multi-dataset compatibility)")
+
         # Display feature engineering configuration
         print(f"\nFeature Configuration:")
         print(f"  Using improved features: {self.use_improved_features}")
         if self.use_improved_features:
             print(f"  Including experimental features: {self.include_experimental}")
+        print(f"  Remove height: {self.remove_height}")
+        print(f"  Remove weight: {self.remove_weight}")
         print(f"  Total features: {len(feature_cols)}")
 
         X = df[feature_cols]
@@ -122,11 +224,22 @@ class CardiovascularModelTrainer:
         self.feature_names = feature_cols
         return X, y
 
-    def train_model(self, X_train, y_train, model_name='random_forest', use_grid_search=True):
+    def train_model(self, X_train, y_train, model_name='random_forest',
+                    use_grid_search=True, sample_weight=None):
         """
-        Train a model with optional hyperparameter tuning
+        Train a model with optional hyperparameter tuning and sample weights.
+
+        Args:
+            X_train: Training features
+            y_train: Training labels
+            model_name: Name of the model to train
+            use_grid_search: Whether to perform grid search
+            sample_weight: Optional sample weights for weighted training
         """
         print(f"\nTraining {model_name}...")
+        if sample_weight is not None:
+            print(f"Using sample weights (range: {sample_weight.min():.2f} - {sample_weight.max():.2f})")
+
         model = self.models[model_name]
 
         if use_grid_search and model_name in MODELS_CONFIG:
@@ -139,13 +252,25 @@ class CardiovascularModelTrainer:
                 n_jobs=-1,
                 verbose=1
             )
+            # Note: GridSearchCV doesn't directly support sample_weight in fit
+            # We fit the best model with sample_weight after grid search
             grid_search.fit(X_train, y_train)
             best_model = grid_search.best_estimator_
+
+            # Refit with sample weights if provided
+            if sample_weight is not None and hasattr(best_model, 'fit'):
+                print("Refitting best model with sample weights...")
+                best_model.set_params(**grid_search.best_params_)
+                best_model.fit(X_train, y_train, sample_weight=sample_weight)
+
             print(f"Best parameters: {grid_search.best_params_}")
             print(f"Best CV score: {grid_search.best_score_:.4f}")
             return best_model, grid_search.best_params_, grid_search.best_score_
         else:
-            model.fit(X_train, y_train)
+            if sample_weight is not None:
+                model.fit(X_train, y_train, sample_weight=sample_weight)
+            else:
+                model.fit(X_train, y_train)
             cv_scores = cross_val_score(model, X_train, y_train, cv=CV_FOLDS, scoring='roc_auc')
             print(f"CV ROC-AUC: {cv_scores.mean():.4f} (+/- {cv_scores.std():.4f})")
             return model, {}, cv_scores.mean()
@@ -177,15 +302,23 @@ class CardiovascularModelTrainer:
 
         return metrics
 
-    def train_all_models(self, X_train, y_train, X_test, y_test):
+    def train_all_models(self, X_train, y_train, X_test, y_test, sample_weight=None):
         """
-        Train and evaluate all models, select the best one
+        Train and evaluate all models, select the best one.
+
+        Args:
+            X_train: Training features
+            y_train: Training labels
+            X_test: Test features
+            y_test: Test labels
+            sample_weight: Optional sample weights for training
         """
         results = {}
 
         for model_name in self.models.keys():
             trained_model, best_params, cv_score = self.train_model(
-                X_train, y_train, model_name, use_grid_search=True
+                X_train, y_train, model_name,
+                use_grid_search=True, sample_weight=sample_weight
             )
             metrics = self.evaluate_model(trained_model, X_test, y_test, model_name)
 
@@ -240,8 +373,15 @@ class CardiovascularModelTrainer:
                 'use_improved_features': self.use_improved_features,
                 'include_experimental': self.include_experimental,
                 'remove_weight': self.remove_weight,
+                'remove_height': self.remove_height,
                 'num_features': len(self.feature_names)
-            }
+            },
+            # Data source transparency (v2)
+            'data_sources': self.data_sources,
+            'excluded_sources': {
+                'uci': 'Excluded - lacks height/weight/lifestyle features required for training'
+            },
+            'training_data_note': 'Model trained on real measured data from Kaggle, NHANES, and Framingham datasets'
         }
 
         metadata_path = MODELS_DIR / f"metadata_{timestamp}.json"
@@ -263,28 +403,49 @@ class CardiovascularModelTrainer:
 
         return model_path, scaler_path, metadata_path
 
-    def run_pipeline(self):
+    def run_pipeline(self, use_multi_dataset=True):
         """
-        Execute the complete training pipeline
+        Execute the complete training pipeline.
+
+        Args:
+            use_multi_dataset: If True, uses harmonized multi-dataset training
+                              (Kaggle + NHANES + Framingham). If False, uses
+                              single dataset (Kaggle only).
         """
         print("="*60)
         print("CARDIOVASCULAR DISEASE PREDICTION - TRAINING PIPELINE")
         print("="*60)
 
         # Load data
-        df = self.load_data()
+        sample_weights = None
+        if use_multi_dataset:
+            df, sample_weights = self.load_multi_dataset()
+            is_multi_dataset = True
+        else:
+            df = self.load_data()
+            is_multi_dataset = False
 
         # Preprocess
-        df = self.preprocess_data(df)
+        df = self.preprocess_data(df, is_multi_dataset=is_multi_dataset)
 
         # Prepare features
         X, y = self.prepare_features(df)
 
-        # Split data
+        # Split data (stratified)
         print(f"\nSplitting data: {int((1-TEST_SIZE)*100)}% train, {int(TEST_SIZE*100)}% test")
-        X_train, X_test, y_train, y_test = train_test_split(
-            X, y, test_size=TEST_SIZE, random_state=RANDOM_STATE, stratify=y
-        )
+
+        if sample_weights is not None:
+            # Need to also split sample weights
+            X_train, X_test, y_train, y_test, sw_train, sw_test = train_test_split(
+                X, y, sample_weights[:len(X)],
+                test_size=TEST_SIZE, random_state=RANDOM_STATE, stratify=y
+            )
+        else:
+            X_train, X_test, y_train, y_test = train_test_split(
+                X, y, test_size=TEST_SIZE, random_state=RANDOM_STATE, stratify=y
+            )
+            sw_train = None
+
         print(f"Training set: {len(X_train)} samples")
         print(f"Test set: {len(X_test)} samples")
 
@@ -294,13 +455,19 @@ class CardiovascularModelTrainer:
         X_test_scaled = self.scaler.transform(X_test)
 
         # Train all models
-        results = self.train_all_models(X_train_scaled, y_train, X_test_scaled, y_test)
+        results = self.train_all_models(
+            X_train_scaled, y_train, X_test_scaled, y_test,
+            sample_weight=sw_train
+        )
 
         # Save the best model
         model_path, scaler_path, metadata_path = self.save_model(results)
 
         print("\n" + "="*60)
         print("TRAINING COMPLETE!")
+        if use_multi_dataset:
+            print("Trained on multi-dataset: Kaggle + NHANES + Framingham")
+            print(f"Data sources: {list(self.data_sources.keys())}")
         print("="*60)
 
         return {

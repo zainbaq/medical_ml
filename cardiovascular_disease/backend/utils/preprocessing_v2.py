@@ -71,9 +71,11 @@ class PreprocessorV2:
         'bp_medication', 'diabetes', 'family_history_cvd'
     ]
 
-    # Basic features (required for v1 compatibility)
+    # Basic features (required for model input)
+    # Note: height/weight removed - using BMI only for multi-dataset compatibility
+    # Height/weight are used to calculate BMI but not passed to model
     BASIC_FEATURES = [
-        'age_years', 'gender', 'height', 'bmi',
+        'age_years', 'gender', 'bmi',  # BMI only (no height/weight)
         'ap_hi', 'ap_lo', 'cholesterol', 'gluc',
         'smoke', 'alco', 'active'
     ]
@@ -167,7 +169,11 @@ class PreprocessorV2:
         patient_data: PatientDataV2
     ) -> Dict[str, Any]:
         """
-        Prepare basic features (v1 compatible).
+        Prepare basic features for model input.
+
+        Height and weight from user input are converted to BMI.
+        Only BMI is passed to the model (not height/weight) for
+        multi-dataset compatibility.
 
         Args:
             patient_data: Patient data from request
@@ -175,14 +181,15 @@ class PreprocessorV2:
         Returns:
             Dictionary of feature values
         """
-        # Calculate BMI
+        # Calculate BMI from height/weight (user input)
         bmi = self.calculate_bmi(patient_data.height, patient_data.weight)
 
+        # Note: height/weight NOT included - using BMI only for model
+        # This enables multi-dataset training (Framingham has estimated height/weight)
         features = {
             'age_years': patient_data.age_years,
             'gender': patient_data.gender,
-            'height': patient_data.height,
-            'bmi': bmi,
+            'bmi': bmi,  # Calculated from height/weight
             'ap_hi': patient_data.ap_hi,
             'ap_lo': patient_data.ap_lo,
             'cholesterol': patient_data.cholesterol,

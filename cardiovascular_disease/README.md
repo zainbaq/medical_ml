@@ -11,19 +11,47 @@ A production-ready FastAPI backend for predicting cardiovascular disease risk us
 - **Risk Assessment**: Provides risk levels (low, medium, high) based on prediction probability
 - **RESTful API**: FastAPI-based endpoints with automatic documentation
 
-## Dataset
+## Training Data Sources
 
-The model is trained on the Cardiovascular Disease dataset from Kaggle containing 70,000 patient records with the following features:
+The model is trained on a harmonized combination of cardiovascular disease datasets (~80K total records):
 
+| Dataset | Records | Weight | Description |
+|---------|---------|--------|-------------|
+| **Kaggle** | ~70,000 | 1.0 | Original cardiovascular dataset |
+| **NHANES 2017-2020** | ~5,800 | 1.2 | CDC population health data with lab values |
+| **Framingham** | ~4,000 | 1.3 | Validated longitudinal heart study |
+
+### Excluded Datasets
+
+| Dataset | Records | Reason |
+|---------|---------|--------|
+| **UCI Heart Disease** | 673 | Missing anthropometric features (height, weight, lifestyle data) |
+
+### Data Transparency
+
+- All training data uses **real measured patient values**
+- API responses include `training_data_sources` field showing which datasets were used
+- Model metadata includes complete data provenance information
+
+### Features Used
+
+**Core Features (from all datasets):**
 - Age (years)
 - Gender (1=female, 2=male)
-- Height (cm) and Weight (kg)
+- BMI (calculated from height/weight)
 - Systolic and Diastolic Blood Pressure
 - Cholesterol level (1=normal, 2=above normal, 3=well above normal)
 - Glucose level (1=normal, 2=above normal, 3=well above normal)
 - Smoking status
 - Alcohol consumption
 - Physical activity
+
+**Extended Features (v2 API, when available):**
+- HDL/LDL cholesterol, triglycerides
+- Fasting glucose, HbA1c
+- BP medication status, diabetes status
+
+> **Note:** Height and weight are collected from users but converted to BMI for model input. This enables multi-dataset training with consistent features.
 
 ## Project Structure
 

@@ -516,6 +516,7 @@ class ImprovedFeatureEngineer:
         include_experimental: bool = False,
         include_extended: bool = False,
         remove_weight: bool = True,
+        remove_height: bool = True,
         tier: str = 'basic'
     ) -> List[str]:
         """
@@ -529,6 +530,8 @@ class ImprovedFeatureEngineer:
             Whether v2 extended features are included
         remove_weight : bool
             Whether to remove weight (redundant with BMI)
+        remove_height : bool
+            Whether to remove height (use BMI only for multi-dataset compatibility)
         tier : str
             Feature tier: 'basic' (original 18), 'extended' (with lab values),
             or 'full' (all available)
@@ -539,15 +542,20 @@ class ImprovedFeatureEngineer:
             List of feature column names
         """
         # Base features (v1)
+        # Note: height removed by default for multi-dataset compatibility
         features = [
-            'age_years', 'gender', 'height', 'bmi',
+            'age_years', 'gender', 'bmi',  # BMI only (no height/weight)
             'ap_hi', 'ap_lo', 'cholesterol', 'gluc',
             'smoke', 'alco', 'active'
         ]
 
+        # Add height if not removing (for backward compatibility)
+        if not remove_height:
+            features.insert(2, 'height')
+
         # Add weight if not removing
         if not remove_weight:
-            features.insert(3, 'weight')
+            features.insert(3 if remove_height else 4, 'weight')
 
         # High priority engineered features (v1)
         features.extend([
@@ -623,12 +631,18 @@ class ImprovedFeatureEngineer:
             'basic': {
                 'description': 'Core features available from user input',
                 'required': [
-                    'age_years', 'gender', 'height', 'weight',
+                    # Note: height/weight removed - using BMI only for multi-dataset compatibility
+                    # API layer calculates BMI from user-provided height/weight
+                    'age_years', 'gender', 'bmi',
                     'ap_hi', 'ap_lo', 'cholesterol', 'gluc',
                     'smoke', 'alco', 'active'
                 ],
+                'user_input': [
+                    # These are provided by user but converted to BMI
+                    'height', 'weight'
+                ],
                 'engineered': [
-                    'bmi', 'pulse_pressure', 'mean_arterial_pressure',
+                    'pulse_pressure', 'mean_arterial_pressure',
                     'hypertension_stage', 'bmi_category', 'age_group',
                     'health_risk_composite', 'lifestyle_risk_score'
                 ],

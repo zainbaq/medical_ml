@@ -29,10 +29,10 @@ DATASETS = {
         'description': 'Original Kaggle cardiovascular dataset (70K records)'
     },
     'uci': {
-        'enabled': True,
-        'weight': 1.5,  # Higher weight for clinical features
+        'enabled': False,  # EXCLUDED: Lacks height/weight/lifestyle data required for training
+        'weight': 1.5,
         'path': DATA_DIR / 'uci_heart.csv',
-        'description': 'UCI Heart Disease dataset (~920 records)'
+        'description': 'UCI Heart Disease dataset - EXCLUDED (missing anthropometric features)'
     },
     'nhanes': {
         'enabled': True,
@@ -88,6 +88,7 @@ OUTLIER_THRESHOLDS = {
 USE_IMPROVED_FEATURES = True  # Set to True to use improved feature engineering
 INCLUDE_EXPERIMENTAL_FEATURES = False  # Set to True to include interaction/polynomial features
 REMOVE_WEIGHT = True  # Remove weight (redundant with BMI)
+REMOVE_HEIGHT = True  # Remove height (use BMI only - enables Framingham dataset inclusion)
 
 # Original feature names
 FEATURE_COLUMNS_ORIGINAL = [
@@ -97,8 +98,9 @@ FEATURE_COLUMNS_ORIGINAL = [
 ]
 
 # Improved feature names (high priority features)
+# Note: height/weight removed - using BMI only (enables multi-dataset training)
 FEATURE_COLUMNS_IMPROVED = [
-    'age_years', 'gender', 'height', 'bmi',
+    'age_years', 'gender', 'bmi',  # BMI only (no height/weight)
     'ap_hi', 'ap_lo', 'cholesterol', 'gluc',
     'smoke', 'alco', 'active',
     # New engineered features

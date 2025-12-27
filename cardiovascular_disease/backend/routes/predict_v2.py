@@ -223,12 +223,18 @@ async def get_feature_requirements() -> FeatureRequirementsResponse:
     return FeatureRequirementsResponse(
         basic={
             "description": "Standard prediction from user-provided data",
-            "required_features": [
+            "user_input_features": [
                 "age_years", "gender", "height", "weight",
                 "ap_hi", "ap_lo", "cholesterol", "gluc",
                 "smoke", "alco", "active"
             ],
-            "total_features": 18,
+            "model_features": [
+                "age_years", "gender", "bmi",  # BMI calculated from height/weight
+                "ap_hi", "ap_lo", "cholesterol", "gluc",
+                "smoke", "alco", "active"
+            ],
+            "note": "Height and weight are used to calculate BMI. Model uses BMI, not raw height/weight.",
+            "total_features": 17,
             "confidence_level": "medium"
         },
         extended={
@@ -300,6 +306,17 @@ async def get_model_info_v2() -> ModelInfoResponseV2:
         metrics.get('recall', 0) >= performance_targets['sensitivity']
     ])
 
+    # Get training data info from metadata
+    training_data_info = metadata.get('data_sources', {
+        "kaggle": {"records": 70000, "weight": 1.0, "description": "Original Kaggle cardiovascular dataset"},
+        "nhanes": {"records": 5800, "weight": 1.2, "description": "NHANES 2017-2020 cardiovascular data"},
+        "framingham": {"records": 4000, "weight": 1.3, "description": "Framingham Heart Study dataset"}
+    })
+
+    excluded_data_info = metadata.get('excluded_sources', {
+        "uci": {"reason": "Missing anthropometric features (height, weight, lifestyle data)"}
+    })
+
     return ModelInfoResponseV2(
         model_type=metadata.get('model_name', 'Unknown'),
         version=metadata.get('timestamp', SERVICE_VERSION),
@@ -308,7 +325,9 @@ async def get_model_info_v2() -> ModelInfoResponseV2:
         feature_importance=feature_importance,
         performance_targets=performance_targets,
         meets_targets=meets_targets,
-        available_tiers=['basic', 'extended']
+        available_tiers=['basic', 'extended'],
+        training_data_info=training_data_info,
+        excluded_data_info=excluded_data_info
     )
 
 
